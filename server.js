@@ -3,6 +3,8 @@ const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const { exec } = require('child_process');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -384,9 +386,10 @@ app.get('/api/settings', (req, res) => {
   if (fs.existsSync(settingsPath)) {
     try {
       const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      // Masking API Key nhạy cảm
+      // Masking các dữ liệu nhạy cảm
       const safeSettings = { ...settings };
       if (safeSettings.aiKey) safeSettings.aiKey = '********';
+      if (safeSettings.webhookSecret) safeSettings.webhookSecret = '********';
       return res.json(safeSettings);
     } catch (e) {
       return res.status(500).json({ error: 'Lỗi đọc cấu hình từ máy chủ.' });
@@ -405,10 +408,13 @@ app.post('/api/settings', requireAuth, (req, res) => {
       currentSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
     }
     
-    // Hợp nhất cấu hình, giữ lại aiKey thật nếu gửi lên là masked '********'
+    // Hợp nhất cấu hình, giữ lại aiKey và webhookSecret thật nếu gửi lên là masked '********'
     const mergedSettings = { ...currentSettings, ...newSettings };
     if (newSettings.aiKey === '********') {
       mergedSettings.aiKey = currentSettings.aiKey || '';
+    }
+    if (newSettings.webhookSecret === '********') {
+      mergedSettings.webhookSecret = currentSettings.webhookSecret || '';
     }
 
     fs.writeFileSync(settingsPath, JSON.stringify(mergedSettings, null, 2), 'utf8');
@@ -419,6 +425,60 @@ app.post('/api/settings', requireAuth, (req, res) => {
   } catch (e) {
     res.status(500).json({ error: 'Lỗi ghi cấu hình lên máy chủ: ' + e.message });
   }
+});
+
+// Middleware xác thực chữ ký bảo mật từ GitHub Webhook
+function verifyWebhookSignature(req, res, next) {
+  const signature = req.headers['x-hub-signature-256'];
+  const settingsPath = path.join(__dirname, 'settings.json');
+  let secret = process.env.GITHUB_WEBHOOK_SECRET || '';
+
+  if (fs.existsSync(settingsPath)) {
+    try {
+      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      if (settings.webhookSecret) {
+        secret = settings.webhookSecret;
+      }
+    } catch (e) {}
+  }
+
+  // Nếu không thiết lập secret trên server, cho phép bỏ qua kiểm tra để dễ dàng kích hoạt lần đầu
+  if (!secret) {
+    return next();
+  }
+
+  if (!signature) {
+    return res.status(401).json({ error: 'Thiếu chữ ký xác thực X-Hub-Signature-256 từ GitHub.' });
+  }
+
+  // Chuyển body sang raw JSON string để băm HMAC
+  const hmac = crypto.createHmac('sha256', secret);
+  const digest = 'sha256=' + hmac.update(JSON.stringify(req.body)).digest('hex');
+
+  try {
+    if (crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest))) {
+      next();
+    } else {
+      res.status(403).json({ error: 'Chữ ký Webhook không khớp.' });
+    }
+  } catch (err) {
+    res.status(400).json({ error: 'Lỗi kiểm tra chữ ký: ' + err.message });
+  }
+}
+
+// 9. API Webhook tự động kéo mã nguồn từ Github và reload PM2 khi có push
+app.post('/api/deploy-webhook', express.json({ verify: (req, res, buf) => { req.rawBody = buf } }), verifyWebhookSignature, (req, res) => {
+  console.log('Webhook: Nhận tín hiệu push từ GitHub, bắt đầu tự động deploy...');
+  
+  // Chạy các lệnh kéo git và reload PM2 trên VPS
+  exec('git pull origin master && pm2 reload "app.nghialam.com"', (err, stdout, stderr) => {
+    if (err) {
+      console.error('Lỗi tự động deploy:', err.message);
+      return res.status(500).json({ error: 'Lỗi chạy lệnh deploy: ' + err.message });
+    }
+    console.log('Deploy thành công:\n', stdout);
+    res.json({ success: true, message: 'Đã tự động deploy và cập nhật thành công!', stdout });
+  });
 });
 
 // Hàm đồng bộ lịch từ Google Apps Script chạy ngầm trên server

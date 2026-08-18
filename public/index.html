@@ -493,7 +493,7 @@
           </div>
         </div>
 
-        <!-- Google Calendar Integration Settings -->
+        <!-- Google Calendar & Webhook Deployment Settings -->
         <div class="form-row">
           <div class="form-group col-6">
             <label for="setting-gcal-id"><strong>Google Calendar ID (Tài khoản lịch):</strong></label>
@@ -502,6 +502,12 @@
           <div class="form-group col-6">
             <label for="setting-apps-script-url"><strong>Google Apps Script Web App URL:</strong></label>
             <input type="url" id="setting-apps-script-url" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-12">
+            <label for="setting-webhook-secret"><strong>GitHub Webhook Secret (Mã xác thực tự động cập nhật code):</strong></label>
+            <input type="password" id="setting-webhook-secret" class="form-control" placeholder="Bỏ trống nếu không dùng chữ ký xác thực bảo mật">
           </div>
         </div>
 

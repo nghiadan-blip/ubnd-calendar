@@ -10,6 +10,7 @@ let settings = {
   syncMode: 'server-sqlite', // Mặc định dùng server-sqlite để chia sẻ dữ liệu giữa tất cả thiết bị
   appsScriptUrl: '',       // Google Apps Script Web App URL
   gcalId: 'primary',       // Google Calendar ID
+  webhookSecret: '',       // GitHub Webhook Secret
   aiProvider: 'deepseek',  // 'deepseek' hoặc 'openai'
   aiModel: 'deepseek-chat',// Tên model AI
   aiKey: ''                // API Key lưu cục bộ
@@ -162,6 +163,7 @@ async function loadSettings() {
       if (serverSettings.appsScriptUrl) {
         settings.appsScriptUrl = serverSettings.appsScriptUrl;
         settings.gcalId = serverSettings.gcalId || settings.gcalId;
+        settings.webhookSecret = serverSettings.webhookSecret || settings.webhookSecret;
         settings.aiProvider = serverSettings.aiProvider || settings.aiProvider;
         settings.aiModel = serverSettings.aiModel || settings.aiModel;
         if (!settings.aiKey && serverSettings.aiKey && serverSettings.aiKey !== '********') {
@@ -178,6 +180,7 @@ async function loadSettings() {
   
   document.getElementById('setting-gcal-id').value = settings.gcalId || 'primary';
   document.getElementById('setting-apps-script-url').value = settings.appsScriptUrl || '';
+  document.getElementById('setting-webhook-secret').value = settings.webhookSecret ? '********' : '';
 
   document.getElementById('setting-ai-provider').value = settings.aiProvider || 'deepseek';
   document.getElementById('setting-ai-model').value = settings.aiModel || 'deepseek-chat';
@@ -1877,6 +1880,7 @@ function setupEventListeners() {
     const syncMode = document.querySelector('input[name="setting-sync-mode"]:checked').value;
     const appsScriptUrl = document.getElementById('setting-apps-script-url').value.trim();
     const gcalId = document.getElementById('setting-gcal-id').value.trim();
+    const webhookSecretInput = document.getElementById('setting-webhook-secret').value.trim();
     const aiProvider = document.getElementById('setting-ai-provider').value;
     const aiModel = document.getElementById('setting-ai-model').value.trim();
     const aiKeyInput = document.getElementById('setting-ai-key').value.trim();
@@ -1887,6 +1891,9 @@ function setupEventListeners() {
     settings.aiProvider = aiProvider;
     settings.aiModel = aiModel || (aiProvider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o');
     
+    if (webhookSecretInput !== '********') {
+      settings.webhookSecret = webhookSecretInput;
+    }
     if (aiKeyInput !== '********') {
       settings.aiKey = aiKeyInput;
     }
