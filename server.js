@@ -21,7 +21,11 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Cấu hình mật khẩu quản trị (Mặc định: NghiaLam@2026, có thể thay đổi bằng biến môi trường)
@@ -451,9 +455,10 @@ function verifyWebhookSignature(req, res, next) {
     return res.status(401).json({ error: 'Thiếu chữ ký xác thực X-Hub-Signature-256 từ GitHub.' });
   }
 
-  // Chuyển body sang raw JSON string để băm HMAC
+  // Sử dụng raw body buffer nhận từ mạng để đảm bảo băm chính xác tuyệt đối
+  const payload = req.rawBody ? req.rawBody : JSON.stringify(req.body);
   const hmac = crypto.createHmac('sha256', secret);
-  const digest = 'sha256=' + hmac.update(JSON.stringify(req.body)).digest('hex');
+  const digest = 'sha256=' + hmac.update(payload).digest('hex');
 
   try {
     if (crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest))) {
@@ -467,7 +472,7 @@ function verifyWebhookSignature(req, res, next) {
 }
 
 // 9. API Webhook tự động kéo mã nguồn từ Github và reload PM2 khi có push
-app.post('/api/deploy-webhook', express.json({ verify: (req, res, buf) => { req.rawBody = buf } }), verifyWebhookSignature, (req, res) => {
+app.post('/api/deploy-webhook', verifyWebhookSignature, (req, res) => {
   console.log('Webhook: Nhận tín hiệu push từ GitHub, bắt đầu tự động deploy...');
   
   // Chạy các lệnh kéo git và reload PM2 trên VPS
