@@ -1,0 +1,38 @@
+[
+  {
+    "title": "Hội nghị đối thoại trực tiếp giữa Lãnh đạo UBND xã Nghĩa Lâm với Thanh niên năm 2026",
+    "start_time": "2026-07-18 08:30",
+    "end_time": "2026-07-18 11:30",
+    "chairperson": "Đ/c Nguyễn Văn A - Chủ tịch UBND xã",
+    "location": "Hội trường lớn UBND xã",
+    "attendees": "Đoàn thanh niên xã, các Bí thư chi đoàn thôn, đại diện thanh niên tiêu biểu",
+    "preparing_unit": "Đoàn Thanh niên xã & Văn phòng UBND",
+    "category": "ubnd",
+    "status": "scheduled",
+    "document_link": "https://docs.google.com/document/d/mock-json-doc1/edit"
+  },
+  {
+    "title": "Kiểm tra thực tế và bàn giao nhà tình nghĩa cho hộ nghèo tại thôn 4",
+    "start_time": "2026-07-18 14:00",
+    "end_time": "2026-07-18 16:30",
+    "chairperson": "Đ/c Trần Thị C - Phó Chủ tịch UBND xã",
+    "location": "Hộ gia đình ông Nguyễn Văn H - Thôn 4",
+    "attendees": "Công chức Lao động - TB&XH, Ủy ban Mặt trận Tổ quốc xã, Trưởng thôn 4",
+    "preparing_unit": "Mặt trận Tổ quốc xã",
+    "category": "thuc_dia",
+    "status": "scheduled",
+    "document_link": ""
+  },
+  {
+    "title": "Tiếp đoàn kiểm tra liên ngành của huyện về công tác cải cách hành chính",
+    "start_time": "2026-07-19 09:00",
+    "end_time": "2026-07-19 11:30",
+    "chairperson": "Đ/c Nguyễn Văn A - Chủ tịch UBND xã",
+    "location": "Phòng họp tầng 2",
+    "attendees": "Toàn thể cán bộ, công chức làm việc tại Bộ phận Một cửa",
+    "preparing_unit": "Văn phòng UBND xã",
+    "category": "ubnd",
+    "status": "scheduled",
+    "document_link": "https://docs.google.com/document/d/mock-json-doc2/edit"
+  }
+]

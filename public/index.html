@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hệ thống Quản lý Lịch làm việc UBND Xã Nghĩa Lâm</title>
+  <!-- Google Fonts: Be Vietnam Pro -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome for Premium Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+  <!-- External Libraries via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+</head>
+<body>
+
+  <!-- ========================================== -->
+  <!-- MAIN APP CONTAINER                         -->
+  <!-- ========================================== -->
+  <div id="app-container">
+    
+    <!-- Top Header -->
+    <header class="main-header">
+      <div class="header-brand">
+        <div class="emblem-container">
+          <i class="fa-solid fa-landmark emblem-icon"></i>
+        </div>
+        <div class="header-titles">
+          <h1>ỦY BAN NHÂN DÂN XÃ NGHĨA LÂM</h1>
+          <p>Hệ thống Thông tin & Quản lý Lịch công tác điện tử</p>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <!-- Live Clock -->
+        <div class="live-clock-widget">
+          <i class="fa-regular fa-clock"></i>
+          <span id="live-time">00:00:00</span>
+          <span class="clock-divider">|</span>
+          <span id="live-date">Thứ ---, 00/00/0000</span>
+        </div>
+        
+        <!-- Toggle Admin Mode -->
+        <button id="btn-toggle-admin" class="btn btn-outline">
+          <i class="fa-solid fa-lock"></i>
+          <span>Văn phòng UBND</span>
+        </button>
+        
+        <!-- Open TV Mode -->
+        <button id="btn-enter-tv" class="btn btn-vibrant">
+          <i class="fa-solid fa-tv"></i>
+          <span>Hiển thị TV sảnh</span>
+        </button>
+        
+        <!-- Settings Button -->
+        <button id="btn-settings" class="btn btn-icon-only" title="Cấu hình hệ thống">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <div class="main-layout">
+      
+      <!-- Toolbar & Filters -->
+      <section class="toolbar-section">
+        <div class="week-selector-group">
+          <button id="btn-prev-week" class="btn btn-icon" title="Tuần trước">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <div class="current-week-label">
+            <i class="fa-regular fa-calendar-days"></i>
+            <span id="week-display-range">Tuần từ --/--/---- đến --/--/----</span>
+          </div>
+          <button id="btn-next-week" class="btn btn-icon" title="Tuần sau">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+          <button id="btn-current-week" class="btn btn-outline btn-sm">Tuần này</button>
+        </div>
+        
+        <div class="filter-controls">
+          <!-- Search input -->
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="search-input" placeholder="Tìm kiếm nội dung lịch họp, chủ trì...">
+          </div>
+          
+          <!-- Filter by Chairperson -->
+          <select id="filter-chairperson" class="form-select">
+            <option value="">-- Tất cả Chủ trì --</option>
+            <option value="Nguyễn Văn A">Chủ tịch Nguyễn Văn A</option>
+            <option value="Lê Văn B">Phó Chủ tịch Lê Văn B</option>
+            <option value="Trần Thị C">Phó Chủ tịch Trần Thị C</option>
+          </select>
+
+          <!-- Filter by Category -->
+          <select id="filter-category" class="form-select">
+            <option value="">-- Tất cả Phân loại --</option>
+            <option value="dang_uy">Khối Đảng ủy / HĐND</option>
+            <option value="ubnd">Khối UBND / Chuyên môn</option>
+            <option value="tiep_dan">Lịch Tiếp công dân</option>
+            <option value="thuc_dia">Đi thực địa / Cơ sở</option>
+          </select>
+          
+          <!-- Export Button -->
+          <button id="btn-export-image" class="btn btn-secondary">
+            <i class="fa-solid fa-image"></i>
+            <span>Xuất ảnh Lịch</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Active Database/API Connection Badge -->
+      <div class="connection-status-container">
+        <span id="connection-badge" class="badge badge-offline">
+          <i class="fa-solid fa-circle"></i> <span id="connection-status-text">Đang chạy Offline (LocalStorage)</span>
+        </span>
+        <div class="admin-buttons-group admin-only hidden" style="display: flex; gap: 8px;">
+          <!-- Input file ẩn để upload -->
+          <input type="file" id="input-upload-file" class="hidden" accept=".json,.csv" style="display: none;">
+          <button id="btn-upload-calendar" class="btn btn-secondary btn-sm" title="Nhập danh sách lịch họp từ file Excel/CSV hoặc JSON">
+            <i class="fa-solid fa-file-import"></i> Nhập từ file (.json/.csv)
+          </button>
+          <button id="btn-add-event" class="btn btn-success btn-sm">
+            <i class="fa-solid fa-plus"></i> Thêm lịch mới
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Navigation Tabs -->
+      <nav class="navigation-tabs">
+        <button class="tab-item active" data-tab="tab-calendar">
+          <i class="fa-solid fa-calendar-week"></i> Lịch Công tác Tuần
+        </button>
+        <button class="tab-item" data-tab="tab-citizen-reception">
+          <i class="fa-solid fa-people-roof"></i> Lịch Tiếp công dân của Lãnh đạo
+        </button>
+      </nav>
+
+      <!-- Tab Content Area -->
+      <main class="tab-content">
+        
+        <!-- TAB 1: WEEKLY CALENDAR GRID -->
+        <div id="tab-calendar" class="tab-panel active">
+          <div class="calendar-grid-wrapper" id="calendar-capture-area">
+            
+            <div class="grid-header-watermark">UBND XÃ NGHĨA LÂM - LỊCH CÔNG TÁC TUẦN</div>
+            
+            <!-- Grid Layout representing Monday - Sunday -->
+            <div class="calendar-grid">
+              
+              <!-- Column Header Time/Day -->
+              <div class="grid-header-col first-col">Buổi</div>
+              <div class="grid-header-col" data-day="1">Thứ Hai <span class="header-date">13/07</span></div>
+              <div class="grid-header-col" data-day="2">Thứ Ba <span class="header-date">14/07</span></div>
+              <div class="grid-header-col" data-day="3">Thứ Tư <span class="header-date">15/07</span></div>
+              <div class="grid-header-col" data-day="4">Thứ Năm <span class="header-date">16/07</span></div>
+              <div class="grid-header-col" data-day="5">Thứ Sáu <span class="header-date">17/07</span></div>
+              <div class="grid-header-col" data-day="6">Thứ Bảy <span class="header-date">18/07</span></div>
+              <div class="grid-header-col" data-day="7">Chủ Nhật <span class="header-date">19/07</span></div>
+              
+              <!-- Row: SÁNG (Morning) -->
+              <div class="time-slot-label morning-label">
+                <i class="fa-regular fa-sun"></i> SÁNG
+              </div>
+              <!-- 7 Day cells for morning -->
+              <div class="grid-cell" id="cell-morning-1" data-day="1" data-slot="morning"></div>
+              <div class="grid-cell" id="cell-morning-2" data-day="2" data-slot="morning"></div>
+              <div class="grid-cell" id="cell-morning-3" data-day="3" data-slot="morning"></div>
+              <div class="grid-cell" id="cell-morning-4" data-day="4" data-slot="morning"></div>
+              <div class="grid-cell" id="cell-morning-5" data-day="5" data-slot="morning"></div>
+              <div class="grid-cell" id="cell-morning-6" data-day="6" data-slot="morning"></div>
+              <div class="grid-cell" id="cell-morning-7" data-day="7" data-slot="morning"></div>
+
+              <!-- Row: CHIỀU (Afternoon) -->
+              <div class="time-slot-label afternoon-label">
+                <i class="fa-regular fa-moon"></i> CHIỀU
+              </div>
+              <!-- 7 Day cells for afternoon -->
+              <div class="grid-cell" id="cell-afternoon-1" data-day="1" data-slot="afternoon"></div>
+              <div class="grid-cell" id="cell-afternoon-2" data-day="2" data-slot="afternoon"></div>
+              <div class="grid-cell" id="cell-afternoon-3" data-day="3" data-slot="afternoon"></div>
+              <div class="grid-cell" id="cell-afternoon-4" data-day="4" data-slot="afternoon"></div>
+              <div class="grid-cell" id="cell-afternoon-5" data-day="5" data-slot="afternoon"></div>
+              <div class="grid-cell" id="cell-afternoon-6" data-day="6" data-slot="afternoon"></div>
+              <div class="grid-cell" id="cell-afternoon-7" data-day="7" data-slot="afternoon"></div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: CITIZEN RECEPTION SCHEDULE -->
+        <div id="tab-citizen-reception" class="tab-panel">
+          <div class="citizen-reception-container">
+            <div class="reception-header-card">
+              <div class="reception-badge">LỊCH TIẾP DÂN</div>
+              <h2>Lịch Tiếp Công Dân Của Lãnh Đạo UBND Xã Nghĩa Lâm</h2>
+              <p>Thực hiện theo Luật Tiếp công dân nhằm lắng nghe, giải quyết khiếu nại, phản ánh của cử tri.</p>
+            </div>
+            
+            <div class="reception-layout">
+              <div class="reception-info-left">
+                <h3>Quy định & Thời gian tiếp công dân</h3>
+                <ul class="reception-rules">
+                  <li>
+                    <i class="fa-solid fa-user-tie"></i>
+                    <div>
+                      <strong>Chủ tịch UBND xã:</strong>
+                      <p>Tiếp công dân định kỳ vào ngày Thứ Năm hàng tuần.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <i class="fa-solid fa-users"></i>
+                    <div>
+                      <strong>Phó Chủ tịch & Cán bộ chuyên môn:</strong>
+                      <p>Tiếp dân thường xuyên vào tất cả các ngày làm việc trong tuần tại phòng Tiếp dân.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <i class="fa-solid fa-clock"></i>
+                    <div>
+                      <strong>Giờ làm việc:</strong>
+                      <p>Sáng: 07:30 - 11:30 | Chiều: 13:30 - 17:00</p>
+                    </div>
+                  </li>
+                </ul>
+                <div class="alert-box alert-info">
+                  <i class="fa-solid fa-circle-info"></i>
+                  <span>Công dân đến phản ánh vui lòng mang đầy đủ Giấy tờ tùy thân và Hồ sơ tài liệu liên quan đến nội dung kiến nghị.</span>
+                </div>
+              </div>
+              
+              <div class="reception-schedule-right" id="citizen-reception-list">
+                <!-- Will be dynamically populated with citizen reception events -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TV VIEW DISPLAY (KIOSK MODE) OVERLAY        -->
+  <!-- ========================================== -->
+  <div id="tv-mode-container" class="hidden">
+    <header class="tv-header">
+      <div class="tv-brand">
+        <div>
+          <h2>ỦY BAN NHÂN DÂN XÃ NGHĨA LÂM</h2>
+          <span class="tv-subbrand">MÀN HÌNH CHUYÊN ĐỀ THEO DÕI LỊCH CÔNG TÁC TUẦN</span>
+        </div>
+      </div>
+      
+      <div class="tv-clock-area">
+        <div id="tv-time">00:00:00</div>
+        <div id="tv-date">Thứ ---, 00/00/0000</div>
+      </div>
+    </header>
+
+    <div class="tv-body-lr">
+      <!-- Cột Trái (60%): Lịch hôm nay (Cố định, tự dàn hàng ngang nếu có nhiều lịch) -->
+      <div class="tv-left-today">
+        <div class="tv-section-title">
+          <i class="fa-solid fa-circle-play text-sky"></i>
+          <span>LỊCH HỌP & CÔNG TÁC HÔM NAY</span>
+        </div>
+        <div id="tv-events-list" class="tv-today-grid-fixed">
+          <!-- Dynamic today's events loaded here -->
+        </div>
+      </div>
+      
+      <!-- Cột Phải (40%): Lịch các ngày còn lại trong tuần (Chạy dưới chạy lên - Tự động cuộn dọc) -->
+      <div class="tv-right-upcoming">
+        <div class="tv-section-title">
+          <i class="fa-solid fa-calendar-days text-sky"></i>
+          <span>LỊCH TIẾP THEO TRONG TUẦN</span>
+        </div>
+        <div id="tv-upcoming-list" class="tv-upcoming-scroll-vertical">
+          <!-- Dynamic upcoming events loaded here -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- Floating Back Button for Admin exit -->
+    <button id="btn-exit-tv" class="btn btn-tv-exit" title="Thoát chế độ TV">
+      <i class="fa-solid fa-arrow-left"></i> Quay lại
+    </button>
+  </div>
+
+
+  <!-- ========================================== -->
+  <!-- MODAL: ADD / EDIT CALENDAR EVENT          -->
+  <!-- ========================================== -->
+  <div id="modal-event" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-event-title">Thêm lịch làm việc mới</h3>
+        <button class="modal-close" data-close="modal-event">&times;</button>
+      </div>
+      <form id="form-event">
+        <input type="hidden" id="event-id">
+        
+        <!-- Trích xuất bằng AI -->
+        <details class="ai-extractor-details" style="margin-bottom: 20px; border: 1px dashed rgba(16, 185, 129, 0.4); border-radius: 12px; background: #F0FDF4; padding: 12px;">
+          <summary style="font-weight: 700; color: var(--primary); cursor: pointer; outline: none; display: flex; align-items: center; gap: 8px; font-size: 0.85rem;">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Trực quan: Trích xuất lịch từ văn bản công văn bằng AI
+          </summary>
+          <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+            <p style="font-size: 0.75rem; color: var(--text-light); line-height: 1.4; margin: 0;">
+              Dán nội dung lời mời họp, thông báo hoặc công văn hành chính dưới dạng văn bản thô vào đây. Trợ lý AI (DeepSeek/Codex) sẽ tự động phân tích bóc tách thông tin và tự điền vào form bên dưới.
+            </p>
+            <textarea id="event-ai-raw-text" class="form-control" rows="3" placeholder="Ví dụ: Giấy mời họp: UBND Huyện kính mời Chủ tịch UBND xã Vy An dự cuộc họp trực tuyến phòng chống dịch vào 09h00 ngày 15/07/2026 tại Phòng họp số 1..."></textarea>
+            <div style="display: flex; justify-content: flex-end;">
+              <button type="button" id="btn-ai-extract" class="btn btn-vibrant btn-sm">
+                <i class="fa-solid fa-microchip-ai"></i> Phân tích văn bản công văn
+              </button>
+            </div>
+          </div>
+        </details>
+        
+        <div class="form-group">
+          <label for="event-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Nội dung công việc <span class="text-danger">*</span></span>
+            <button type="button" id="btn-ai-polish-title" class="btn btn-outline btn-sm" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 6px; gap: 4px;" title="Tối ưu tiêu đề cuộc họp theo văn phong hành chính nhà nước">
+              <i class="fa-solid fa-wand-magic-sparkles text-emerald"></i> Chuẩn hóa văn phong AI
+            </button>
+          </label>
+          <textarea id="event-title" class="form-control" rows="2" placeholder="Ví dụ: Họp giao ban, Tiếp công dân..." required></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="event-category">Phân loại <span class="text-danger">*</span></label>
+            <select id="event-category" class="form-control" required>
+              <option value="ubnd">Khối UBND / Chuyên môn</option>
+              <option value="dang_uy">Khối Đảng ủy / HĐND</option>
+              <option value="tiep_dan">Lịch Tiếp công dân</option>
+              <option value="thuc_dia">Đi thực địa / Cơ sở</option>
+            </select>
+          </div>
+          <div class="form-group col-6">
+            <label for="event-status">Trạng thái</label>
+            <select id="event-status" class="form-control">
+              <option value="scheduled">Sắp diễn ra</option>
+              <option value="ongoing">Đang diễn ra</option>
+              <option value="completed">Đã kết thúc</option>
+              <option value="postponed">Đã hoãn</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="event-start">Bắt đầu <span class="text-danger">*</span></label>
+            <input type="datetime-local" id="event-start" class="form-control" required>
+          </div>
+          <div class="form-group col-6">
+            <label for="event-end">Kết thúc <span class="text-danger">*</span></label>
+            <input type="datetime-local" id="event-end" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="event-chairperson">Người chủ trì <span class="text-danger">*</span></label>
+            <select id="event-chairperson" class="form-control" required>
+              <option value="">-- Chọn người chủ trì --</option>
+              <option value="Chủ tịch UBND - Đ/c Nguyễn Hùng Cường">Chủ tịch UBND - Đ/c Nguyễn Hùng Cường</option>
+              <option value="PCT UBND - Đ/c Nguyễn Huy Anh">PCT UBND - Đ/c Nguyễn Huy Anh</option>
+              <option value="PCT UBND - Đ/c Lô Xuân Du">PCT UBND - Đ/c Lô Xuân Du</option>
+              <option value="Bí thư Đảng ủy - Đ/c Phan Văn Hiển">Bí thư Đảng ủy - Đ/c Phan Văn Hiển</option>
+              <option value="PBT TT Đảng ủy - Đ/c Võ Tiến Sỹ">PBT TT Đảng ủy - Đ/c Võ Tiến Sỹ</option>
+              <option value="PCT HĐND xã - Đ/c Nguyễn Vân Anh">PCT HĐND xã - Đ/c Nguyễn Vân Anh</option>
+            </select>
+          </div>
+          <div class="form-group col-6">
+            <label for="event-location">Địa điểm <span class="text-danger">*</span></label>
+            <select id="event-location" class="form-control" required>
+              <option value="">-- Chọn địa điểm --</option>
+              <option value="Phòng họp UBND">Phòng họp UBND</option>
+              <option value="Hội trường UBND">Hội trường UBND</option>
+              <option value="Hội trường Đảng ủy">Hội trường Đảng ủy</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="event-attendees">Thành phần tham dự</label>
+          <input type="text" id="event-attendees" class="form-control" placeholder="Cán bộ, Công chức, Trưởng thôn...">
+        </div>
+
+        <div class="form-group">
+          <label for="event-preparing">Đơn vị chuẩn bị nội dung</label>
+          <select id="event-preparing" class="form-control">
+            <option value="">-- Chọn đơn vị chuẩn bị --</option>
+            <option value="Văn phòng UBND">Văn phòng UBND</option>
+            <option value="Địa chính - Xây dựng">Địa chính - Xây dựng</option>
+            <option value="Tài chính - Kế hoạch">Tài chính - Kế hoạch</option>
+            <option value="Tư pháp - Hộ tịch">Tư pháp - Hộ tịch</option>
+            <option value="Văn hóa - Xã hội">Văn hóa - Xã hội</option>
+            <option value="Lao động - TB&XH">Lao động - TB&XH</option>
+            <option value="Công an xã">Công an xã</option>
+            <option value="Quân sự xã">Quân sự xã</option>
+            <option value="Đảng ủy - HĐND">Đảng ủy - HĐND</option>
+            <option value="Ủy ban MTTQ xã">Ủy ban MTTQ xã</option>
+            <option value="Đoàn Thanh niên">Đoàn Thanh niên</option>
+            <option value="Hội Phụ nữ">Hội Phụ nữ</option>
+            <option value="Hội Nông dân">Hội Nông dân</option>
+            <option value="Hội Cựu chiến binh">Hội Cựu chiến binh</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="event-document">Link tài liệu đính kèm (Google Drive, OneDrive,...)</label>
+          <input type="url" id="event-document" class="form-control" placeholder="https://...">
+        </div>
+
+        <!-- Room Conflict Override Checkbox -->
+        <div class="form-group-checkbox hidden" id="override-conflict-container">
+          <div class="alert-box alert-warning">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div>
+              <span id="conflict-warning-text">Cảnh báo trùng phòng họp!</span>
+              <label class="checkbox-label">
+                <input type="checkbox" id="event-override-conflict"> 
+                Vẫn lưu bất kể trùng lịch (Bỏ qua cảnh báo)
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tự động hóa Google Drive & Gửi Email -->
+        <div class="form-row" style="margin-top: 15px; border-top: 1px solid #F1F5F9; padding-top: 15px; margin-bottom: 10px;">
+          <div class="form-group col-6">
+            <label class="checkbox-label" style="font-weight: normal; color: var(--text-main);" title="Tự động tạo thư mục cuộc họp trên Google Drive của xã để lưu tài liệu">
+              <input type="checkbox" id="event-auto-drive" checked> 
+              <i class="fa-brands fa-google-drive text-emerald"></i> Tự tạo Drive Folder họp
+            </label>
+          </div>
+          <div class="form-group col-6">
+            <label class="checkbox-label" style="font-weight: normal; color: var(--text-main);" title="Gửi thư mời HTML tự động cho các thành phần tham dự qua Gmail">
+              <input type="checkbox" id="event-send-email"> 
+              <i class="fa-regular fa-envelope text-emerald"></i> Gửi email thông báo lịch
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-close="modal-event">Đóng</button>
+          <button type="button" id="btn-delete-event" class="btn btn-danger hidden">Xóa lịch</button>
+          <button type="submit" id="btn-save-event" class="btn btn-success">Lưu lịch họp</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ========================================== -->
+  <!-- MODAL: APP SETTINGS / CONFIGURATION        -->
+  <!-- ========================================== -->
+  <div id="modal-settings" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Cấu hình Kết nối & Đồng bộ Hệ thống</h3>
+        <button class="modal-close" data-close="modal-settings">&times;</button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Sync Mode Selection -->
+        <div class="form-group">
+          <label><strong>Chế độ cơ sở dữ liệu (Database Mode):</strong></label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="setting-sync-mode" value="wasm-sqlite" checked> 
+              SQLite WebAssembly (Truy vấn SQL thực tế trong trình duyệt - Không cần cài đặt)
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="setting-sync-mode" value="server-sqlite"> 
+              SQLite Backend Server (Thông qua máy chủ Node.js Express API)
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="setting-sync-mode" value="local"> 
+              LocalStorage (Lưu trữ dữ liệu dạng danh sách JSON thuần - Offline)
+            </label>
+          </div>
+        </div>
+
+        <!-- Google Calendar Integration Settings -->
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="setting-gcal-id"><strong>Google Calendar ID (Tài khoản lịch):</strong></label>
+            <input type="text" id="setting-gcal-id" class="form-control" placeholder="primary hoặc email@gmail.com">
+          </div>
+          <div class="form-group col-6">
+            <label for="setting-apps-script-url"><strong>Google Apps Script Web App URL:</strong></label>
+            <input type="url" id="setting-apps-script-url" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
+          </div>
+        </div>
+
+        <!-- AI Assistant API Integration Settings -->
+        <div class="form-group" style="margin-top: 15px; border-top: 1px solid #E2E8F0; padding-top: 15px;">
+          <label><strong>Cấu hình Trợ lý AI (DeepSeek / Codex API):</strong></label>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label for="setting-ai-provider">Nhà cung cấp AI</label>
+            <select id="setting-ai-provider" class="form-control">
+              <option value="deepseek">DeepSeek API (Khuyên dùng)</option>
+              <option value="openai">OpenAI / Codex API</option>
+            </select>
+          </div>
+          <div class="form-group col-6">
+            <label for="setting-ai-model">Model AI</label>
+            <input type="text" id="setting-ai-model" class="form-control" placeholder="deepseek-chat hoặc gpt-4o">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="setting-ai-key">API Key <span id="key-required-badge" style="color: red; font-size: 0.75rem; font-weight: normal;">(Lưu cục bộ tại LocalStorage của bạn)</span></label>
+          <input type="password" id="setting-ai-key" class="form-control" placeholder="Nhập API Key sk-...">
+        </div>
+
+        <!-- Test connections buttons -->
+        <div class="settings-actions">
+          <button id="btn-test-backend" class="btn btn-outline btn-sm">
+            <i class="fa-solid fa-server"></i> Kiểm tra SQL Backend
+          </button>
+          <button id="btn-test-gas" class="btn btn-outline btn-sm" disabled>
+            <i class="fa-solid fa-cloud"></i> Kiểm tra Google Sync
+          </button>
+        </div>
+        
+        <div id="settings-status-box" class="settings-status-box hidden">
+          <!-- Connection results -->
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-close="modal-settings">Đóng</button>
+        <button type="button" id="btn-save-settings" class="btn btn-success">Lưu cấu hình</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: ĐĂNG NHẬP QUẢN TRỊ VIÊN             -->
+  <!-- ========================================== -->
+  <div id="modal-admin-login" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3>Đăng nhập Quản trị viên</h3>
+        <button class="modal-close" data-close="modal-admin-login">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-admin-login">
+          <div class="form-group">
+            <label for="admin-password-input"><strong>Mật khẩu quản trị hệ thống:</strong></label>
+            <input type="password" id="admin-password-input" class="form-control" placeholder="Nhập mật khẩu..." required autocomplete="current-password">
+          </div>
+          <div id="admin-login-error" style="color: red; margin-top: 10px; font-size: 0.9rem;" class="hidden"></div>
+          <button type="submit" class="btn btn-success" style="margin-top: 15px; width: 100%;">Xác nhận đăng nhập</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: SHOW MEETING QR & SHARE DETAILS     -->
+  <!-- ========================================== -->
+  <div id="modal-details" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="details-modal-title">Chi tiết lịch làm việc</h3>
+        <button class="modal-close" data-close="modal-details">&times;</button>
+      </div>
+      <div class="modal-body" id="details-modal-body">
+        
+        <div class="details-layout">
+          <!-- Left info details -->
+          <div class="details-info-section">
+            <div id="details-category-badge" class="badge">Phân loại</div>
+            <h4 id="details-title" class="details-main-title">Nội dung họp</h4>
+            
+            <table class="details-table">
+              <tr>
+                <td><i class="fa-solid fa-clock icon-fw"></i> <strong>Thời gian:</strong></td>
+                <td id="details-time">--:-- | --/--/----</td>
+              </tr>
+              <tr>
+                <td><i class="fa-solid fa-user-tie icon-fw"></i> <strong>Chủ trì:</strong></td>
+                <td id="details-chairperson">--</td>
+              </tr>
+              <tr>
+                <td><i class="fa-solid fa-location-dot icon-fw"></i> <strong>Địa điểm:</strong></td>
+                <td id="details-location">--</td>
+              </tr>
+              <tr>
+                <td><i class="fa-solid fa-users icon-fw"></i> <strong>Thành phần:</strong></td>
+                <td id="details-attendees">--</td>
+              </tr>
+              <tr>
+                <td><i class="fa-solid fa-briefcase icon-fw"></i> <strong>Chuẩn bị:</strong></td>
+                <td id="details-preparing">--</td>
+              </tr>
+            </table>
+
+            <div class="details-action-buttons">
+              <!-- Zalo Share -->
+              <button id="btn-copy-zalo" class="btn btn-outline btn-sm">
+                <i class="fa-solid fa-share-nodes"></i> Copy mẫu gửi Zalo
+              </button>
+              <!-- Add to Google Calendar template -->
+              <a id="btn-add-gcal-link" target="_blank" class="btn btn-outline btn-sm btn-gcal">
+                <i class="fa-brands fa-google"></i> Thêm vào Google Lịch
+              </a>
+              <!-- Soạn kết luận họp bằng AI -->
+              <button id="btn-ai-minutes-trigger" class="btn btn-secondary btn-sm admin-only hidden" title="Biên soạn thông báo kết luận cuộc họp bằng Trợ lý AI">
+                <i class="fa-solid fa-file-signature text-emerald"></i> Soạn Kết luận AI
+              </button>
+            </div>
+          </div>
+          
+          <!-- Right QR code section for paperless documents -->
+          <div class="details-qr-section" id="details-qr-container">
+            <h5>MÃ QR TÀI LIỆU HỌP</h5>
+            <div id="details-qrcode" class="qrcode-box"></div>
+            <p class="qr-description" id="details-qr-desc">Quét mã để tải tài liệu cuộc họp trực tiếp trên điện thoại di động.</p>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-close="modal-details">Đóng</button>
+        <button type="button" id="btn-edit-from-details" class="btn btn-primary admin-only hidden">Chỉnh sửa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: AI MINUTES & RESOLUTION GENERATOR   -->
+  <!-- ========================================== -->
+  <div id="modal-ai-minutes" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3>Trợ lý AI soạn thảo Kết luận & Biên bản họp</h3>
+        <button class="modal-close" data-close="modal-ai-minutes">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 12px; line-height: 1.5;">
+          Nhập vắn tắt diễn biến, các ý kiến phát biểu hoặc kết luận chính của cuộc họp. Trợ lý AI sẽ tự động biên soạn thành một văn bản "Thông báo kết luận cuộc họp" chuẩn thể thức hành chính công Việt Nam.
+        </p>
+        <div class="form-group">
+          <label for="ai-minutes-raw">Diễn biến / Ý kiến thảo luận chính:</label>
+          <textarea id="ai-minutes-raw" class="form-control" rows="5" placeholder="Ví dụ: - Chủ tịch kết luận: Đồng ý chủ trương sửa đường Thôn 2. Giao Địa chính lập dự toán trước 20/07. - Ý kiến Công an: Cần tăng cường tuần tra đêm. - Diễn biến: 100% cán bộ nhất trí thông qua kế hoạch..."></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+          <button type="button" id="btn-ai-generate-minutes" class="btn btn-vibrant btn-sm">
+            <i class="fa-solid fa-gears"></i> Biên soạn kết luận bằng AI
+          </button>
+        </div>
+        
+        <div id="ai-minutes-result-container" class="hidden">
+          <label><strong>Văn bản dự thảo Kết luận cuộc họp (Định dạng chuẩn):</strong></label>
+          <div id="ai-minutes-result-box" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; font-family: 'Times New Roman', Times, serif; font-size: 1.05rem; line-height: 1.5; color: #0F172A; max-height: 300px; overflow-y: auto; white-space: pre-wrap; text-align: left; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+            <!-- Content from AI -->
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+            <button type="button" id="btn-copy-ai-minutes" class="btn btn-outline btn-sm">
+              <i class="fa-solid fa-copy"></i> Sao chép văn bản kết luận
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-close="modal-ai-minutes">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic Scripts -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

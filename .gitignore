@@ -1,0 +1,6 @@
+node_modules/
+database.sqlite
+settings.json
+nghialam_calendar_update.zip
+.DS_Store
+*.log

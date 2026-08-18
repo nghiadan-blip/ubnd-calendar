@@ -1,0 +1,17 @@
+{
+  "name": "ubnd-calendar-manager",
+  "version": "1.0.0",
+  "description": "Hệ thống quản lý lịch làm việc UBND Xã kết nối SQL và TV Kiosk Mode",
+  "main": "server.js",
+  "scripts": {
+    "init-db": "node init_db.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7"
+  },
+  "author": "Antigravity",
+  "license": "ISC"
+}
