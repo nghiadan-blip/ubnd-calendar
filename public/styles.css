@@ -1,6 +1,16 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    CSS CORE DESIGN SYSTEM & VARIABLES (FRESH & VIBRANT SAAS STYLE)
    ========================================================================== */
+
+#tv-mode-container.hidden {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+#app-container.hidden {
+  display: none !important;
+}
 
 :root {
   /* Vibrant & Fresh Palette */
