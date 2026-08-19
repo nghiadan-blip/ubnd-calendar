@@ -818,13 +818,13 @@ function createEventCard(evt) {
   
   // Phân loại trạng thái thời gian thực
   const now = new Date();
-  const startTime = new Date(evt.start_time.replace(/-/g, '/'));
-  const endTime = new Date(evt.end_time.replace(/-/g, '/'));
+  const startTimeObj = new Date(evt.start_time.replace(/-/g, '/'));
+  const endTimeObj = new Date(evt.end_time.replace(/-/g, '/'));
   let calculatedStatus = evt.status || 'scheduled';
   
-  if (now > endTime) calculatedStatus = 'completed';
-  else if (now >= startTime && now <= endTime) calculatedStatus = 'ongoing';
-  else if (startTime > now && (startTime - now) <= 30 * 60000) calculatedStatus = 'upcoming';
+  if (now > endTimeObj) calculatedStatus = 'completed';
+  else if (now >= startTimeObj && now <= endTimeObj) calculatedStatus = 'ongoing';
+  else if (startTimeObj > now && (startTimeObj - now) <= 30 * 60000) calculatedStatus = 'upcoming';
 
   card.className = `event-card cat-${evt.category} status-${calculatedStatus} ${calculatedStatus}`;
   card.dataset.id = evt.id;
@@ -838,15 +838,15 @@ function createEventCard(evt) {
     }
   }
 
-  const startTime = evt.start_time.split(' ')[1];
-  const endTime = evt.end_time.split(' ')[1];
+  const startTimeStr = evt.start_time.split(' ')[1];
+  const endTimeStr = evt.end_time.split(' ')[1];
 
   card.innerHTML = `
     ${documentIndicator}
     <div class="event-title">${evt.title}</div>
     <div class="event-meta-item">
       <i class="fa-regular fa-clock"></i>
-      <span><strong>${startTime} - ${endTime}</strong></span>
+      <span><strong>${startTimeStr} - ${endTimeStr}</strong></span>
     </div>
     <div class="event-meta-item">
       <i class="fa-solid fa-user-tie"></i>
@@ -2097,8 +2097,16 @@ function setupEventListeners() {
     }
   });
 
-  document.getElementById('btn-enter-tv').addEventListener('click', enterTVMode);
-  document.getElementById('btn-exit-tv').addEventListener('click', exitTVMode);
+  const btnEnterTv = document.getElementById('btn-enter-tv');
+  if (btnEnterTv) {
+    btnEnterTv.addEventListener('click', () => {
+      window.location.href = 'tv.html';
+    });
+  }
+  const btnExitTv = document.getElementById('btn-exit-tv');
+  if (btnExitTv) {
+    btnExitTv.addEventListener('click', exitTVMode);
+  }
 
   // Cho phép thoát TV Mode bằng cách ấn phím ESC trên bàn phím
   window.addEventListener('keydown', (e) => {
