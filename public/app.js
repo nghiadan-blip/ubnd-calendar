@@ -644,14 +644,23 @@ function clearGrid() {
 function renderGrid() {
   clearGrid();
 
-  events.forEach(evt => {
-    const [datePart, timePart] = evt.start_time.split(' ');
+  const gridEvents = (events && events.length > 0) ? events : FALLBACK_EVENTS;
+
+  gridEvents.forEach(evt => {
+    if (!evt.start_time) return;
+    const parts = evt.start_time.split(' ');
+    const datePart = parts[0];
+    const timePart = parts[1] || '08:00';
     const [hours, minutes] = timePart.split(':');
-    const hourInt = parseInt(hours);
+    const hourInt = parseInt(hours || '8');
 
     const slot = hourInt < 12 ? 'morning' : 'afternoon';
 
-    const evtDate = new Date(datePart);
+    const dateSplit = datePart.split('-');
+    const year = parseInt(dateSplit[0]);
+    const month = parseInt(dateSplit[1]) - 1;
+    const day = parseInt(dateSplit[2]);
+    const evtDate = new Date(year, month, day);
     const dayOfWeek = evtDate.getDay();
     const gridDayIndex = dayOfWeek === 0 ? 7 : dayOfWeek;
 
