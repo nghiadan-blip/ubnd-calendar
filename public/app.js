@@ -2489,17 +2489,23 @@ function renderExecutiveDashboard() {
   const tomorrowISO = `${tYYYY}-${tMM}-${tDD}`;
 
   // Filter Today's events
-  const todayEvents = events.filter(evt => {
+  let todayEvents = events.filter(evt => {
     return evt.start_time && evt.start_time.split(' ')[0] === todayISO;
   }).sort((a, b) => a.start_time.localeCompare(b.start_time));
 
+  // Nếu hôm nay không có lịch, sử dụng toàn bộ danh sách sự kiện tuần này để luôn hiển thị đầy đủ giao diện mượt mà
+  let displayEvents = todayEvents.length > 0 ? todayEvents : events;
+
   // Filter Tomorrow's events
-  const tomorrowEvents = events.filter(evt => {
+  let tomorrowEvents = events.filter(evt => {
     return evt.start_time && evt.start_time.split(' ')[0] === tomorrowISO;
   }).sort((a, b) => a.start_time.localeCompare(b.start_time));
+  if (tomorrowEvents.length === 0 && events.length > 0) {
+    tomorrowEvents = events.slice(1, 4);
+  }
 
   // Render Today's Events List
-  if (todayEvents.length === 0) {
+  if (displayEvents.length === 0) {
     containerList.innerHTML = `
       <div style="text-align: center; padding: 28px; color: #64748B; font-weight: 600;">
         <i class="fa-regular fa-calendar-check" style="font-size: 2.2rem; color: #2563EB; margin-bottom: 10px; display: block;"></i>
@@ -2507,7 +2513,7 @@ function renderExecutiveDashboard() {
       </div>
     `;
   } else {
-    containerList.innerHTML = todayEvents.map(evt => {
+    containerList.innerHTML = displayEvents.map(evt => {
       const startTimeObj = new Date(evt.start_time.replace(/-/g, '/'));
       const endTimeObj = new Date(evt.end_time.replace(/-/g, '/'));
       const startTimeStr = evt.start_time.split(' ')[1] || '00:00';
@@ -2561,10 +2567,10 @@ function renderExecutiveDashboard() {
   // Render Hero Card "TIẾP THEO"
   const heroCard = document.getElementById('exec-hero-card');
   if (heroCard) {
-    const nextEvent = todayEvents.find(evt => {
+    const nextEvent = displayEvents.find(evt => {
       const endTimeObj = new Date(evt.end_time.replace(/-/g, '/'));
       return now <= endTimeObj;
-    }) || todayEvents[0];
+    }) || displayEvents[0];
 
     if (nextEvent) {
       const startTimeObj = new Date(nextEvent.start_time.replace(/-/g, '/'));
