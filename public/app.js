@@ -1481,17 +1481,16 @@ function enterTVMode() {
 }
 
 function exitTVMode() {
-  document.getElementById('app-container').classList.remove('hidden');
-  document.getElementById('tv-mode-container').classList.add('hidden');
-  
-  // Tự động thoát khỏi chế độ toàn màn hình trình duyệt nếu đang bật
   if (document.fullscreenElement) {
     document.exitFullscreen().catch(err => console.log('Fullscreen exit notice:', err));
   }
-
+  
   if (tvAutoScrollInterval) clearInterval(tvAutoScrollInterval);
   if (tvUpcomingAutoScrollInterval) clearInterval(tvUpcomingAutoScrollInterval);
   if (tvDataRefreshInterval) clearInterval(tvDataRefreshInterval);
+
+  // Tải lại trang triệt để để đưa người dùng trở về màn hình quản lý chính
+  window.location.reload();
 }
 
 async function loadTVData() {
