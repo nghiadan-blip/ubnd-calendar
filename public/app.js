@@ -28,6 +28,15 @@ let originalPreparingHtml = "";
 
 // Khởi chạy ứng dụng
 document.addEventListener('DOMContentLoaded', async () => {
+  // Cưỡng bức chuyển sang trang quản lý chính nếu có tham số ?mode=admin
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('mode') === 'admin') {
+    const tvContainer = document.getElementById('tv-mode-container');
+    const appContainer = document.getElementById('app-container');
+    if (tvContainer) tvContainer.classList.add('hidden');
+    if (appContainer) appContainer.classList.remove('hidden');
+  }
+
   await loadSettings();
   initClock();
   setupEventListeners();
@@ -1489,8 +1498,8 @@ function exitTVMode() {
   if (tvUpcomingAutoScrollInterval) clearInterval(tvUpcomingAutoScrollInterval);
   if (tvDataRefreshInterval) clearInterval(tvDataRefreshInterval);
 
-  // Tải lại trang triệt để để đưa người dùng trở về màn hình quản lý chính
-  window.location.reload();
+  // Ép trình duyệt chuyển hướng về trang quản lý chính với tham số ?mode=admin
+  window.location.href = window.location.pathname + '?mode=admin';
 }
 
 async function loadTVData() {
