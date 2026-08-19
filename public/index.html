@@ -251,47 +251,64 @@
   <!-- TV VIEW DISPLAY (KIOSK MODE) OVERLAY        -->
   <!-- ========================================== -->
   <div id="tv-mode-container" class="hidden">
+    <!-- Nút Fullscreen ẩn ở góc trên phải, chỉ hiển thị khi di chuột -->
+    <button id="btn-tv-fullscreen" class="btn-tv-fullscreen" title="Toàn màn hình">
+      <i class="fa-solid fa-expand"></i>
+    </button>
+    
     <header class="tv-header">
       <div class="tv-brand">
-        <div>
-          <h2>ỦY BAN NHÂN DÂN XÃ NGHĨA LÂM</h2>
-          <span class="tv-subbrand">MÀN HÌNH CHUYÊN ĐỀ THEO DÕI LỊCH CÔNG TÁC TUẦN</span>
-        </div>
+        <h2>ỦY BAN NHÂN DÂN XÃ NGHĨA LÂM</h2>
+        <span class="tv-subbrand">LỊCH CÔNG TÁC</span>
       </div>
       
       <div class="tv-clock-area">
-        <div id="tv-time">00:00:00</div>
-        <div id="tv-date">Thứ ---, 00/00/0000</div>
+        <div id="tv-date">THỨ TƯ, 19/08/2026</div>
+        <div id="tv-time">15:30</div>
       </div>
     </header>
 
     <div class="tv-body-lr">
-      <!-- Cột Trái (60%): Lịch hôm nay (Cố định, tự dàn hàng ngang nếu có nhiều lịch) -->
+      <!-- Cột Trái (70%): Lịch công tác hôm nay (Timeline sạch, cố định) -->
       <div class="tv-left-today">
         <div class="tv-section-title">
-          <i class="fa-solid fa-circle-play text-sky"></i>
-          <span>LỊCH HỌP & CÔNG TÁC HÔM NAY</span>
+          <span>LỊCH CÔNG TÁC HÔM NAY</span>
         </div>
-        <div id="tv-events-list" class="tv-today-grid-fixed">
+        <div id="tv-events-list" class="tv-today-timeline">
           <!-- Dynamic today's events loaded here -->
         </div>
       </div>
       
-      <!-- Cột Phải (40%): Lịch các ngày còn lại trong tuần (Chạy dưới chạy lên - Tự động cuộn dọc) -->
+      <!-- Cột Phải (30%): Khối Tiếp Theo & Ngày Mai -->
       <div class="tv-right-upcoming">
-        <div class="tv-section-title">
-          <i class="fa-solid fa-calendar-days text-sky"></i>
-          <span>LỊCH TIẾP THEO TRONG TUẦN</span>
+        <!-- Khối Tiếp Theo (Hero Card) -->
+        <div class="tv-next-hero-card" id="tv-next-hero">
+          <!-- Dynamic hero content -->
         </div>
-        <div id="tv-upcoming-list" class="tv-upcoming-scroll-vertical">
-          <!-- Dynamic upcoming events loaded here -->
+        
+        <!-- Khối Ngày Mai -->
+        <div class="tv-tomorrow-section">
+          <div class="tv-section-title-small">NGÀY MAI</div>
+          <div id="tv-tomorrow-list" class="tv-tomorrow-list">
+            <!-- Dynamic tomorrow list -->
+          </div>
         </div>
       </div>
     </div>
+
+    <footer class="tv-footer">
+      <div class="tv-footer-left">
+        <span class="tv-footer-tag">TRỌNG TÂM:</span>
+        <span id="tv-focus-content">Đang tải nội dung điều hành trọng tâm...</span>
+      </div>
+      <div class="tv-footer-right" id="tv-sync-status">
+        <i class="fa-solid fa-spinner fa-spin"></i> Đang kết nối đồng bộ...
+      </div>
+    </footer>
     
     <!-- Floating Back Button for Admin exit -->
     <button id="btn-exit-tv" class="btn btn-tv-exit" title="Thoát chế độ TV">
-      <i class="fa-solid fa-arrow-left"></i> Quay lại
+      <i class="fa-solid fa-arrow-left"></i>
     </button>
   </div>
 
@@ -527,6 +544,12 @@
             <label for="setting-webhook-secret"><strong>GitHub Webhook Secret (Mã xác thực tự động cập nhật code):</strong></label>
             <input type="password" id="setting-webhook-secret" class="form-control" placeholder="Bỏ trống nếu không dùng chữ ký xác thực bảo mật">
           </div>
+        </div>
+
+        <!-- Cấu hình Trọng tâm Điều hành cho TV sảnh -->
+        <div class="form-group" style="margin-top: 15px; border-top: 1px solid #E2E8F0; padding-top: 15px;">
+          <label for="setting-tv-focus"><strong>Nội dung Trọng tâm Điều hành (Hiển thị tại Footer TV sảnh):</strong></label>
+          <input type="text" id="setting-tv-focus" class="form-control" placeholder="Hồ sơ đất đai • Thu ngân sách • Giải phóng mặt bằng (GPMB)">
         </div>
 
         <!-- AI Assistant API Integration Settings -->

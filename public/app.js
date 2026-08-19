@@ -13,7 +13,8 @@ let settings = {
   webhookSecret: '',       // GitHub Webhook Secret
   aiProvider: 'deepseek',  // 'deepseek' hoặc 'openai'
   aiModel: 'deepseek-chat',// Tên model AI
-  aiKey: ''                // API Key lưu cục bộ
+  aiKey: '',               // API Key lưu cục bộ
+  tvFocus: 'Hồ sơ đất đai • Thu ngân sách • Giải phóng mặt bằng (GPMB)'
 };
 
 // Biến lưu trữ đối tượng Cơ sở dữ liệu SQL.js
@@ -166,6 +167,7 @@ async function loadSettings() {
         settings.webhookSecret = serverSettings.webhookSecret || settings.webhookSecret;
         settings.aiProvider = serverSettings.aiProvider || settings.aiProvider;
         settings.aiModel = serverSettings.aiModel || settings.aiModel;
+        settings.tvFocus = serverSettings.tvFocus || settings.tvFocus;
         if (!settings.aiKey && serverSettings.aiKey && serverSettings.aiKey !== '********') {
           settings.aiKey = serverSettings.aiKey;
         }
@@ -181,6 +183,7 @@ async function loadSettings() {
   document.getElementById('setting-gcal-id').value = settings.gcalId || 'primary';
   document.getElementById('setting-apps-script-url').value = settings.appsScriptUrl || '';
   document.getElementById('setting-webhook-secret').value = settings.webhookSecret ? '********' : '';
+  document.getElementById('setting-tv-focus').value = settings.tvFocus || '';
 
   document.getElementById('setting-ai-provider').value = settings.aiProvider || 'deepseek';
   document.getElementById('setting-ai-model').value = settings.aiModel || 'deepseek-chat';
@@ -263,8 +266,14 @@ function initClock() {
     document.getElementById('live-time').textContent = timeStr;
     document.getElementById('live-date').textContent = dateStr;
 
-    document.getElementById('tv-time').textContent = timeStr;
-    document.getElementById('tv-date').textContent = dateStr;
+    // Định dạng riêng cho TV sảnh (Đồng hồ không giây, ngày tháng viết hoa)
+    const tvTimeStr = `${hours}:${minutes}`;
+    const tvDateStr = `${dayName.toUpperCase()}, ${date}/${month}/${year}`;
+    
+    const tvTimeEl = document.getElementById('tv-time');
+    const tvDateEl = document.getElementById('tv-date');
+    if (tvTimeEl) tvTimeEl.textContent = tvTimeStr;
+    if (tvDateEl) tvDateEl.textContent = tvDateStr;
   };
 
   updateClock();
@@ -1490,15 +1499,17 @@ async function loadTVData() {
   const endISO = formatDateISO(sunday) + ' 23:59';
   
   let weekEvents = [];
+  let syncSuccess = false;
 
   // Luôn thử tải dữ liệu chính thức từ Express Server trước tiên cho giao diện TV sảnh
   try {
     const res = await fetch(`/api/events?startDate=${formatDateISO(monday)}&endDate=${formatDateISO(sunday)}`);
     if (res.ok) {
       weekEvents = await res.json();
+      syncSuccess = true;
     }
   } catch (e) {
-    console.warn('TV Mode: Không thể tải lịch từ máy chủ, chuyển sang dữ liệu dự phòng cục bộ.', e);
+    console.warn('TV Mode: Không thể tải lịch từ máy chủ Express, thử fallback...', e);
   }
 
   // Nếu máy chủ offline hoặc không có dữ liệu, mới sử dụng dữ liệu cục bộ (WASM hoặc localStorage)
@@ -1511,8 +1522,9 @@ async function loadTVData() {
           weekEvents.push(stmt.getAsObject());
         }
         stmt.free();
+        syncSuccess = true;
       } catch (e) {
-        console.error(e);
+        console.error("WASM Fallback error in TV Mode:", e);
       }
     }
 
@@ -1524,7 +1536,32 @@ async function loadTVData() {
         const evtDate = evt.start_time.split(' ')[0];
         return evtDate >= startDayOnly && evtDate <= endDayOnly;
       });
+      syncSuccess = true;
     }
+  }
+
+  // Sắp xếp lịch họp theo thứ tự thời gian tăng dần
+  weekEvents.sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+  // Cập nhật trạng thái đồng bộ ở Footer TV sảnh
+  const syncStatusEl = document.getElementById('tv-sync-status');
+  if (syncStatusEl) {
+    if (syncSuccess) {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      syncStatusEl.innerHTML = `<i class="fa-solid fa-check"></i> Đồng bộ lúc ${hh}:${mm}`;
+      syncStatusEl.className = 'tv-footer-right';
+    } else {
+      syncStatusEl.innerHTML = `⚠ Mất kết nối`;
+      syncStatusEl.className = 'tv-footer-right offline';
+    }
+  }
+
+  // Cập nhật nội dung Trọng tâm điều hành từ cấu hình
+  const focusContentEl = document.getElementById('tv-focus-content');
+  if (focusContentEl) {
+    focusContentEl.textContent = settings.tvFocus || 'Hồ sơ đất đai • Thu ngân sách • Giải phóng mặt bằng (GPMB)';
   }
 
   // Chia tách sự kiện hôm nay và các ngày còn lại trong tuần
@@ -1532,108 +1569,119 @@ async function loadTVData() {
   const remainingEvents = weekEvents.filter(evt => evt.start_time.split(' ')[0] > todayStr);
 
   renderTVGrid(todayEvents);
-  renderTVUpcomingGrid(remainingEvents);
+  renderTVUpcomingGrid(remainingEvents, todayEvents);
 }
 
 function renderTVGrid(todayEvents) {
   const container = document.getElementById('tv-events-list');
   container.innerHTML = '';
 
-  if (tvAutoScrollInterval) clearInterval(tvAutoScrollInterval);
-
   if (todayEvents.length === 0) {
     container.innerHTML = `
-      <div class="tv-empty-box">
-        <i class="fa-solid fa-calendar-xmark" style="color: #475569"></i>
-        <h4>Hôm nay không có cuộc họp nào</h4>
-        <p>Lịch công tác được cập nhật tự động trực tuyến. Xin vui lòng quay lại sau.</p>
+      <div class="tv-empty-box" style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #FFFFFF; border-radius: 18px; border: 1px dashed rgba(11,31,58,0.15); width: 100%; box-sizing: border-box;">
+        <i class="fa-solid fa-calendar-xmark" style="font-size: 3.5rem; color: #64748B; margin-bottom: 16px;"></i>
+        <h4 style="font-size: 24px; font-weight: 800; color: #0B1F3A; margin: 0 0 8px 0;">Không có lịch công tác hôm nay</h4>
+        <p style="font-size: 18px; color: #64748B; margin: 0;">Lịch làm việc sẽ được cập nhật tự động trực tuyến.</p>
       </div>
     `;
     return;
   }
 
+  const now = new Date();
+  
+  // Tính toán trạng thái cho từng sự kiện
   todayEvents.forEach(evt => {
+    // Định dạng start_time và end_time thành chuỗi hợp lệ của JS (thay thế - bằng /)
+    const startTime = new Date(evt.start_time.replace(/-/g, '/'));
+    const endTime = new Date(evt.end_time.replace(/-/g, '/'));
+    
+    if (now > endTime) {
+      evt.tvStatus = 'completed'; // Đã kết thúc
+    } else if (now >= startTime && now <= endTime) {
+      evt.tvStatus = 'ongoing'; // Đang diễn ra
+    } else {
+      evt.tvStatus = 'upcoming'; // Sắp diễn ra
+      
+      const diffMs = startTime - now;
+      const diffMins = Math.floor(diffMs / 60000);
+      evt.diffMins = diffMins;
+      if (diffMins <= 30 && diffMins > 0) {
+        evt.tvStatus = 'upcoming-near'; // Sắp diễn ra <= 30 phút
+      }
+    }
+  });
+
+  // Xác định chỉ số tiêu điểm (focusIndex)
+  let focusIndex = todayEvents.findIndex(evt => evt.tvStatus === 'ongoing' || evt.tvStatus === 'upcoming' || evt.tvStatus === 'upcoming-near');
+  if (focusIndex === -1) {
+    // Nếu tất cả lịch đã kết thúc, tiêu điểm là lịch cuối cùng
+    focusIndex = todayEvents.length - 1;
+  }
+
+  // Slice danh sách: Lấy tối đa 2 lịch đã qua gần nhất + lịch tiêu điểm + các lịch tiếp theo (tổng tối đa 6 lịch)
+  const startIndex = Math.max(0, focusIndex - 2);
+  const endIndex = Math.min(todayEvents.length, focusIndex + 4);
+  const slicedEvents = todayEvents.slice(startIndex, endIndex);
+
+  slicedEvents.forEach(evt => {
     const card = document.createElement('div');
-    card.className = `tv-event-card cat-${evt.category}`;
+    card.className = `tv-timeline-item ${evt.tvStatus}`;
     
     const startTimeStr = evt.start_time.split(' ')[1];
     const endTimeStr = evt.end_time.split(' ')[1];
 
-    const qrImageHtml = evt.document_link 
-      ? `<div class="tv-event-card-qr">
-           <div class="tv-qr-box">
-             <img src="https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=${encodeURIComponent(evt.document_link)}&color=0f172a" alt="QR Link">
-           </div>
-           <span class="tv-qr-label">Tài liệu họp</span>
+    // Trạng thái hiển thị
+    let statusHtml = '';
+    if (evt.tvStatus === 'completed') {
+      statusHtml = `<span class="tv-badge completed"><i class="fa-solid fa-check"></i> Đã kết thúc</span>`;
+    } else if (evt.tvStatus === 'ongoing') {
+      statusHtml = `<span class="tv-badge ongoing"><i class="fa-solid fa-circle"></i> Đang diễn ra</span>`;
+    } else if (evt.tvStatus === 'upcoming-near') {
+      statusHtml = `<span class="tv-badge upcoming-near"><i class="fa-solid fa-clock"></i> Còn ${evt.diffMins} phút</span>`;
+    }
+
+    // QR Code hiển thị nếu có tài liệu đính kèm
+    const qrHtml = evt.document_link 
+      ? `<div class="tv-item-qr-small" title="Quét tài liệu cuộc họp">
+           <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(evt.document_link)}&color=0b1f3a" alt="QR">
          </div>`
-      : `<div class="tv-event-card-qr" style="opacity: 0.15">
-           <i class="fa-solid fa-qrcode" style="font-size: 2.5rem; color: #94a3b8;"></i>
-         </div>`;
+      : '';
+
+    // Hiển thị thành phần/chủ trì phụ nếu có
+    let metaHtml = '';
+    if (evt.chairperson) {
+      metaHtml += `
+        <div class="tv-item-meta">
+          <i class="fa-solid fa-user-tie"></i>
+          <span>Chủ trì: <strong>${evt.chairperson.split(' - ')[1] || evt.chairperson}</strong></span>
+        </div>
+      `;
+    }
+    if (evt.location) {
+      metaHtml += `
+        <div class="tv-item-meta">
+          <i class="fa-solid fa-location-dot"></i>
+          <span>Địa điểm: <strong>${evt.location}</strong></span>
+        </div>
+      `;
+    }
 
     card.innerHTML = `
-      <div class="tv-event-card-time">
-        <div class="tv-event-time-badge">
-          <i class="fa-regular fa-clock"></i> ${startTimeStr} - ${endTimeStr}
+      <div class="tv-item-time">${startTimeStr}</div>
+      <div class="tv-item-body">
+        <div class="tv-item-title">${evt.title}</div>
+        <div class="tv-item-desc">
+          ${metaHtml}
         </div>
       </div>
-      <div class="tv-event-card-title">
-        <div class="tv-event-title">${evt.title}</div>
+      <div class="tv-item-status">
+        ${statusHtml}
+        ${qrHtml}
       </div>
-      <div class="tv-event-card-meta">
-        <div class="tv-meta-item">
-          <i class="fa-solid fa-user-tie"></i>
-          <span>Chủ trì: <strong>${evt.chairperson}</strong></span>
-        </div>
-        <div class="tv-meta-item">
-          <i class="fa-solid fa-location-dot"></i>
-          <span>Nơi họp: <strong>${evt.location}</strong></span>
-        </div>
-        <div class="tv-meta-item">
-          <i class="fa-solid fa-users"></i>
-          <span>Thành phần: <strong>${evt.attendees || 'Cán bộ xã'}</strong></span>
-        </div>
-      </div>
-      ${qrImageHtml}
     `;
 
     container.appendChild(card);
   });
-
-  setupTVAutoScroll(container);
-}
-
-function setupTVAutoScroll(container) {
-  setTimeout(() => {
-    const scrollHeight = container.scrollHeight;
-    const clientHeight = container.clientHeight;
-    
-    if (scrollHeight > clientHeight) {
-      let scrollPos = 0;
-      let scrollDirection = 1;
-      
-      tvAutoScrollInterval = setInterval(() => {
-        if (scrollDirection === 1) {
-          scrollPos += 1;
-          container.scrollTop = scrollPos;
-          
-          if (scrollPos >= scrollHeight - clientHeight) {
-            scrollDirection = -1;
-            clearInterval(tvAutoScrollInterval);
-            setTimeout(() => setupTVAutoScroll(container), 3000);
-          }
-        } else {
-          scrollPos -= 2;
-          container.scrollTop = scrollPos;
-          
-          if (scrollPos <= 0) {
-            scrollDirection = 1;
-            clearInterval(tvAutoScrollInterval);
-            setTimeout(() => setupTVAutoScroll(container), 3000);
-          }
-        }
-      }, 40);
-    }
-  }, 1000);
 }
 
 // ==========================================================================
@@ -1846,6 +1894,33 @@ function setupEventListeners() {
   document.getElementById('btn-enter-tv').addEventListener('click', enterTVMode);
   document.getElementById('btn-exit-tv').addEventListener('click', exitTVMode);
 
+  // Kích hoạt chế độ Fullscreen cho màn hình TV sảnh
+  const btnTvFullscreen = document.getElementById('btn-tv-fullscreen');
+  if (btnTvFullscreen) {
+    btnTvFullscreen.addEventListener('click', () => {
+      const container = document.getElementById('tv-mode-container');
+      if (!document.fullscreenElement) {
+        container.requestFullscreen().catch(err => {
+          console.error(`Lỗi kích hoạt Fullscreen: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    });
+  }
+
+  // Theo dõi sự thay đổi trạng thái fullscreen để đổi icon
+  document.addEventListener('fullscreenchange', () => {
+    const icon = document.querySelector('#btn-tv-fullscreen i');
+    if (icon) {
+      if (document.fullscreenElement) {
+        icon.className = 'fa-solid fa-compress';
+      } else {
+        icon.className = 'fa-solid fa-expand';
+      }
+    }
+  });
+
   document.getElementById('btn-settings').addEventListener('click', () => openModal('modal-settings'));
 
   const closes = document.querySelectorAll('[data-close]');
@@ -1933,12 +2008,14 @@ function setupEventListeners() {
     const aiProvider = document.getElementById('setting-ai-provider').value;
     const aiModel = document.getElementById('setting-ai-model').value.trim();
     const aiKeyInput = document.getElementById('setting-ai-key').value.trim();
+    const tvFocus = document.getElementById('setting-tv-focus').value.trim();
 
     settings.syncMode = syncMode;
     settings.appsScriptUrl = appsScriptUrl;
     settings.gcalId = gcalId || 'primary';
     settings.aiProvider = aiProvider;
     settings.aiModel = aiModel || (aiProvider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o');
+    settings.tvFocus = tvFocus || 'Hồ sơ đất đai • Thu ngân sách • Giải phóng mặt bằng (GPMB)';
     
     if (webhookSecretInput !== '********') {
       settings.webhookSecret = webhookSecretInput;
@@ -2193,112 +2270,103 @@ async function syncFromGoogleCalendar() {
   }
 }
 
-// Hàm render danh sách lịch họp các ngày còn lại trong tuần lên TV theo hàng dọc cuộn
-function renderTVUpcomingGrid(remainingEvents) {
-  const container = document.getElementById('tv-upcoming-list');
-  container.innerHTML = '';
-
-  if (remainingEvents.length === 0) {
-    container.innerHTML = `
-      <div class="tv-empty-box" style="height: auto; width: 100%; padding: 30px; background: #FFFFFF; border-style: dashed; border-width: 1px;">
-        <i class="fa-solid fa-calendar-check" style="font-size: 2.5rem; color: #94A3B8; margin-bottom: 10px;"></i>
-        <h5 style="font-size: 1.1rem; font-weight: 700; color: #475569;">Không có lịch nào khác trong tuần</h5>
-      </div>
-    `;
-    return;
-  }
-
-  // Nhóm lịch họp theo ngày
-  const groupedEvents = {};
-  remainingEvents.forEach(evt => {
-    const dateStr = evt.start_time.split(' ')[0];
-    if (!groupedEvents[dateStr]) {
-      groupedEvents[dateStr] = [];
-    }
-    groupedEvents[dateStr].push(evt);
-  });
-
-  // Sắp xếp các ngày tăng dần và render
-  const sortedDates = Object.keys(groupedEvents).sort();
-  sortedDates.forEach(dateStr => {
-    const dateObj = new Date(dateStr);
-    const dayOfWeek = dateObj.getDay();
-    const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-    const formattedDate = dateStr.split('-').reverse().slice(0, 2).join('/'); // Định dạng DD/MM
+// Hàm render khối TIẾP THEO (Hero Card) và danh sách lịch NGÀY MAI bên cột Phải của TV sảnh
+function renderTVUpcomingGrid(remainingEvents, todayEvents) {
+  const now = new Date();
+  
+  // 1. KẾT XUẤT HERO CARD (TIẾP THEO)
+  const heroContainer = document.getElementById('tv-next-hero');
+  if (heroContainer) {
+    heroContainer.innerHTML = '';
     
-    const groupDiv = document.createElement('div');
-    groupDiv.className = 'tv-upcoming-day-group';
+    // Tìm sự kiện đang diễn ra hoặc sắp diễn ra tiếp theo trong ngày hôm nay
+    const heroEvent = todayEvents.find(evt => evt.tvStatus === 'ongoing' || evt.tvStatus === 'upcoming' || evt.tvStatus === 'upcoming-near');
     
-    groupDiv.innerHTML = `
-      <div class="tv-upcoming-day-title">
-        <i class="fa-regular fa-calendar-check text-sky"></i>
-        <span>${dayNames[dayOfWeek]} (${formattedDate})</span>
-      </div>
-    `;
-
-    groupedEvents[dateStr].forEach(evt => {
-      const card = document.createElement('div');
-      card.className = `tv-upcoming-card cat-${evt.category}`;
+    if (heroEvent) {
+      const startTimeStr = heroEvent.start_time.split(' ')[1];
       
-      const startTimeStr = evt.start_time.split(' ')[1];
-      const endTimeStr = evt.end_time.split(' ')[1];
+      let countdownHtml = '';
+      if (heroEvent.tvStatus === 'ongoing') {
+        countdownHtml = `<div class="tv-hero-countdown ongoing"><i class="fa-solid fa-circle"></i> ĐANG DIỄN RA</div>`;
+      } else if (heroEvent.tvStatus === 'upcoming-near') {
+        countdownHtml = `<div class="tv-hero-countdown near"><i class="fa-solid fa-clock"></i> Còn ${heroEvent.diffMins} phút</div>`;
+      } else {
+        const diffMs = new Date(heroEvent.start_time.replace(/-/g, '/')) - now;
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffMins = Math.floor((diffMs % 3600000) / 60000);
+        const countdownText = diffHours > 0 ? `Còn ${diffHours} giờ ${diffMins} phút` : `Còn ${diffMins} phút`;
+        countdownHtml = `<div class="tv-hero-countdown"><i class="fa-solid fa-clock"></i> ${countdownText}</div>`;
+      }
 
-      card.innerHTML = `
-        <div class="tv-upcoming-time">
-          <i class="fa-regular fa-clock"></i>
-          <span>${startTimeStr} - ${endTimeStr}</span>
+      const cleanChair = heroEvent.chairperson ? heroEvent.chairperson.split(' - ')[1] || heroEvent.chairperson : '';
+
+      heroContainer.innerHTML = `
+        <div class="tv-hero-label">${heroEvent.tvStatus === 'ongoing' ? 'ĐANG DIỄN RA' : 'TIẾP THEO'}</div>
+        <div class="tv-hero-time">${startTimeStr}</div>
+        <div class="tv-hero-title">${heroEvent.title}</div>
+        <div class="tv-hero-meta">
+          <div class="tv-hero-meta-item">
+            <i class="fa-solid fa-location-dot"></i>
+            <span>${heroEvent.location || 'Phòng họp UBND xã'}</span>
+          </div>
+          ${cleanChair ? `
+          <div class="tv-hero-meta-item">
+            <i class="fa-solid fa-user-tie"></i>
+            <span>Chủ trì: ${cleanChair}</span>
+          </div>` : ''}
         </div>
-        <div class="tv-upcoming-title">${evt.title}</div>
-        <div class="tv-upcoming-meta">
-          <span>Chủ trì: <strong>${evt.chairperson || 'UBND'}</strong></span>
-          <span>Nơi họp: <strong>${evt.location}</strong></span>
+        ${countdownHtml}
+      `;
+    } else {
+      // Nếu không còn lịch nào trong hôm nay
+      heroContainer.innerHTML = `
+        <div class="tv-hero-label">HÔM NAY</div>
+        <div class="tv-hero-time" style="color: #0F766E;"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="tv-hero-title" style="color: #0F766E; font-size: 22px;">ĐÃ HOÀN THÀNH</div>
+        <div class="tv-hero-meta" style="margin-bottom: 0;">
+          <div class="tv-hero-meta-item">
+            <span>LỊCH CÔNG TÁC HÔM NAY</span>
+          </div>
         </div>
       `;
-      groupDiv.appendChild(card);
-    });
-
-    container.appendChild(groupDiv);
-  });
-
-  // Khởi chạy cơ chế tự động cuộn dọc (vertical scroll) chạy từ dưới lên trên
-  setupTVUpcomingAutoScroll(container);
-}
-
-// Thiết lập tự động cuộn dọc cho danh sách lịch sắp tới
-function setupTVUpcomingAutoScroll(container) {
-  if (tvUpcomingAutoScrollInterval) clearInterval(tvUpcomingAutoScrollInterval);
-  
-  setTimeout(() => {
-    const scrollHeight = container.scrollHeight;
-    const clientHeight = container.clientHeight;
-    
-    if (scrollHeight > clientHeight) {
-      let scrollPos = 0;
-      let scrollDirection = 1;
-      
-      tvUpcomingAutoScrollInterval = setInterval(() => {
-        if (scrollDirection === 1) {
-          scrollPos += 1;
-          container.scrollTop = scrollPos;
-          
-          if (scrollPos >= scrollHeight - clientHeight) {
-            scrollDirection = -1;
-            clearInterval(tvUpcomingAutoScrollInterval);
-            setTimeout(() => setupTVUpcomingAutoScroll(container), 4000);
-          }
-        } else {
-          scrollPos -= 2;
-          container.scrollTop = scrollPos;
-          
-          if (scrollPos <= 0) {
-            scrollDirection = 1;
-            clearInterval(tvUpcomingAutoScrollInterval);
-            setTimeout(() => setupTVUpcomingAutoScroll(container), 4000);
-          }
-        }
-      }, 50);
     }
-  }, 1000);
+  }
+
+  // 2. KẾT XUẤT DANH SÁCH NGÀY MAI
+  const tomorrowContainer = document.getElementById('tv-tomorrow-list');
+  if (tomorrowContainer) {
+    tomorrowContainer.innerHTML = '';
+    
+    // Tính toán ngày mai
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const tomorrowStr = formatDateISO(tomorrow);
+    
+    // Lọc lịch ngày mai
+    const tomorrowEvents = remainingEvents.filter(evt => evt.start_time.split(' ')[0] === tomorrowStr);
+    
+    if (tomorrowEvents.length === 0) {
+      tomorrowContainer.innerHTML = `
+        <div style="font-size: 16px; color: #64748B; text-align: center; padding: 16px; border: 1px dashed rgba(0,0,0,0.06); border-radius: 12px; background: white;">
+          Không có lịch công tác ngày mai
+        </div>
+      `;
+    } else {
+      // Sắp xếp theo giờ tăng dần và lấy tối đa 3 sự kiện
+      tomorrowEvents.sort((a, b) => a.start_time.localeCompare(b.start_time));
+      const slicedTomorrow = tomorrowEvents.slice(0, 3);
+      
+      slicedTomorrow.forEach(evt => {
+        const startTimeStr = evt.start_time.split(' ')[1];
+        const item = document.createElement('div');
+        item.className = 'tv-tomorrow-item';
+        item.innerHTML = `
+          <div class="tv-tomorrow-time">${startTimeStr}</div>
+          <div class="tv-tomorrow-title" title="${evt.title}">${evt.title}</div>
+        `;
+        tomorrowContainer.appendChild(item);
+      });
+    }
+  }
 }
 
 // Thoát cưỡng bức chế độ quản trị khi token hoặc mật khẩu sai/hết hạn
