@@ -17,8 +17,8 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background-color: #F4F7FB;
-      color: #0B1F3A;
+      background-color: #F0F9FF; /* Nền xanh nước biển nhạt dịu mắt */
+      color: #0F172A;
       font-family: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
     }
 
@@ -27,32 +27,37 @@
       flex-direction: column;
       width: 100vw;
       height: 100vh;
-      padding: 24px 36px;
+      padding: 20px 32px;
       box-sizing: border-box;
       overflow: hidden;
       position: relative;
     }
 
+    /* Header Xanh Nước Biển Sang Trọng */
     .tv-header {
-      height: 9vh;
+      height: 10vh;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 2px solid rgba(11, 31, 58, 0.08);
-      padding-bottom: 12px;
+      background: linear-gradient(135deg, #0284C7 0%, #0369A1 50%, #1E3A8A 100%);
+      padding: 12px 28px;
+      border-radius: 20px;
+      box-shadow: 0 8px 24px -4px rgba(2, 132, 199, 0.25);
+      color: #FFFFFF;
     }
 
     .tv-brand {
       display: flex;
       align-items: center;
-      gap: 18px;
+      gap: 20px;
     }
 
+    /* Logo Quốc huy Việt Nam sắc nét */
     .tv-emblem-img {
-      height: clamp(52px, 4.2vw, 68px);
+      height: clamp(56px, 4.8vw, 72px);
       width: auto;
       object-fit: contain;
-      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25));
       flex-shrink: 0;
     }
 
@@ -62,19 +67,20 @@
     }
 
     .tv-brand h2 {
-      font-size: clamp(24px, 2.1vw, 32px);
+      font-size: clamp(24px, 2.2vw, 34px);
       font-weight: 900;
-      color: #0B1F3A;
+      color: #FFFFFF;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.8px;
       line-height: 1.1;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
     }
 
     .tv-subbrand {
-      font-size: clamp(13px, 1vw, 16px);
+      font-size: clamp(14px, 1.1vw, 18px);
       font-weight: 700;
-      color: #0F766E;
-      letter-spacing: 1.2px;
+      color: #E0F2FE; /* Chữ trắng xanh nước biển sáng */
+      letter-spacing: 1.5px;
       margin-top: 4px;
     }
 
@@ -85,24 +91,27 @@
     }
 
     #tv-date {
-      font-size: clamp(18px, 1.3vw, 22px);
+      font-size: clamp(18px, 1.4vw, 24px);
       font-weight: 700;
-      color: #475569;
+      color: #BAE6FD;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     #tv-time {
-      font-size: clamp(50px, 4vw, 64px);
+      font-size: clamp(52px, 4.2vw, 68px);
       font-weight: 900;
-      color: #0B1F3A;
+      color: #FFFFFF;
       font-feature-settings: "tnum";
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
 
+    /* Body Layout 16:9 */
     .tv-body-lr {
-      height: 79vh;
+      height: 78vh;
       display: flex;
       gap: 28px;
-      margin: 20px 0;
+      margin: 18px 0;
       overflow: hidden;
     }
 
@@ -121,26 +130,29 @@
       overflow: hidden;
     }
 
+    /* Tiêu đề mục to rõ rực rỡ */
     .tv-section-title {
-      font-size: clamp(22px, 1.6vw, 28px);
-      font-weight: 800;
-      color: #0B1F3A;
-      margin-bottom: 24px;
+      font-size: clamp(24px, 1.8vw, 30px);
+      font-weight: 900;
+      color: #0369A1; /* Màu xanh nước biển đậm */
+      margin-bottom: 20px;
       text-transform: uppercase;
-      border-left: 6px solid #0B1F3A;
-      padding-left: 12px;
+      border-left: 8px solid #0284C7;
+      padding-left: 14px;
+      letter-spacing: 0.5px;
     }
 
     .tv-section-title-small {
-      font-size: clamp(16px, 1.2vw, 20px);
-      font-weight: 800;
-      color: #0B1F3A;
+      font-size: clamp(18px, 1.3vw, 22px);
+      font-weight: 900;
+      color: #0369A1;
       margin-bottom: 12px;
       text-transform: uppercase;
-      border-left: 4px solid #0B1F3A;
-      padding-left: 8px;
+      border-left: 5px solid #0284C7;
+      padding-left: 10px;
     }
 
+    /* Timeline Danh sách hôm nay */
     .tv-today-timeline {
       flex: 1;
       display: flex;
@@ -149,44 +161,53 @@
       overflow: hidden;
     }
 
+    /* Card cuộc họp Trắng tinh tế nổi bật trên nền xanh */
     .tv-timeline-item {
       display: flex;
       align-items: center;
-      padding: 16px 24px;
+      padding: 18px 26px;
       background: #FFFFFF;
-      border-radius: 16px;
-      border: 1px solid rgba(0, 0, 0, 0.04);
-      box-shadow: 0 4px 12px rgba(11, 31, 58, 0.02);
-      min-height: 85px;
+      border-radius: 18px;
+      border: 1px solid #E0F2FE;
+      box-shadow: 0 6px 18px -2px rgba(2, 132, 199, 0.08);
+      min-height: 90px;
       position: relative;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
 
-    .tv-timeline-item.completed { opacity: 0.5; }
+    .tv-timeline-item.completed {
+      opacity: 0.55;
+      background: #F8FAFC;
+    }
 
+    /* Sự kiện ĐANG DIỄN RA - Xanh nước biển viền sáng nhấp nháy */
     .tv-timeline-item.ongoing {
-      background: rgba(15, 118, 110, 0.04);
-      border: 1px solid rgba(15, 118, 110, 0.15);
-      box-shadow: 0 6px 18px rgba(15, 118, 110, 0.06);
+      background: #F0F9FF;
+      border: 2px solid #0284C7;
+      box-shadow: 0 8px 24px rgba(2, 132, 199, 0.18);
     }
 
     .tv-timeline-item.ongoing::before {
       content: '';
       position: absolute;
       left: 0; top: 0; bottom: 0;
-      width: 6px;
-      background: #0F766E;
-      border-top-left-radius: 16px;
-      border-bottom-left-radius: 16px;
+      width: 8px;
+      background: #0284C7;
+      border-top-left-radius: 18px;
+      border-bottom-left-radius: 18px;
     }
 
+    /* Giờ họp Font Size To Rõ */
     .tv-item-time {
-      flex: 0 0 110px;
-      font-size: clamp(24px, 1.8vw, 28px);
-      font-weight: 800;
-      color: #0B1F3A;
+      flex: 0 0 120px;
+      font-size: clamp(26px, 2vw, 32px);
+      font-weight: 900;
+      color: #0284C7; /* Xanh nước biển */
     }
 
-    .tv-timeline-item.ongoing .tv-item-time { color: #0F766E; }
+    .tv-timeline-item.ongoing .tv-item-time {
+      color: #0369A1;
+    }
 
     .tv-item-body {
       flex: 1;
@@ -194,106 +215,145 @@
       min-width: 0;
     }
 
+    /* Tiêu đề cuộc họp Font Size To Rõ */
     .tv-item-title {
-      font-size: clamp(20px, 1.6vw, 24px);
-      font-weight: 700;
-      color: #0B1F3A;
-      margin-bottom: 6px;
+      font-size: clamp(22px, 1.7vw, 26px);
+      font-weight: 800;
+      color: #0F172A;
+      margin-bottom: 8px;
       line-height: 1.35;
     }
 
     .tv-timeline-item.ongoing .tv-item-title {
-      color: #0F766E;
-      font-weight: 800;
+      color: #0369A1;
+      font-weight: 900;
     }
 
     .tv-item-desc {
-      font-size: clamp(15px, 1.1vw, 18px);
-      color: #64748B;
+      font-size: clamp(16px, 1.2vw, 19px);
+      color: #475569;
       display: flex;
       flex-wrap: wrap;
-      gap: 16px;
+      gap: 18px;
     }
 
     .tv-item-meta {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
 
-    .tv-item-meta strong { color: #334155; }
+    .tv-item-meta i {
+      color: #0284C7;
+      font-size: 1.1rem;
+    }
+
+    .tv-item-meta strong {
+      color: #1E293B;
+      font-weight: 700;
+    }
 
     .tv-item-status {
-      flex: 0 0 180px;
+      flex: 0 0 190px;
       display: flex;
       align-items: center;
       justify-content: flex-end;
       gap: 16px;
     }
 
+    /* Nhãn trạng thái */
     .tv-badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      font-size: clamp(13px, 0.9vw, 16px);
+      gap: 8px;
+      font-size: clamp(14px, 1vw, 17px);
       font-weight: 800;
-      padding: 6px 12px;
-      border-radius: 8px;
+      padding: 8px 14px;
+      border-radius: 10px;
       text-transform: uppercase;
       white-space: nowrap;
     }
 
-    .tv-badge.completed { color: #475569; background: #F1F5F9; }
+    .tv-badge.completed {
+      color: #64748B;
+      background: #F1F5F9;
+    }
+
     .tv-badge.ongoing {
-      color: #0F766E;
-      background: rgba(15, 118, 110, 0.1);
-      animation: pulse-teal 2s infinite ease-in-out;
+      color: #FFFFFF;
+      background: #0284C7;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+      animation: pulse-blue-glow 2s infinite ease-in-out;
     }
-    @keyframes pulse-teal { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-    .tv-badge.upcoming-near { color: #B45309; background: rgba(180, 83, 9, 0.1); }
 
+    @keyframes pulse-blue-glow {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.03); opacity: 0.85; }
+    }
+
+    .tv-badge.upcoming-near {
+      color: #D97706;
+      background: #FEF3C7;
+      border: 1px solid #FDE68A;
+    }
+
+    /* Khung mã QR Code */
     .tv-item-qr-small {
-      width: 52px; height: 52px;
-      background: white; border: 1px solid #E2E8F0;
-      padding: 3px; border-radius: 6px; flex-shrink: 0;
+      width: 58px;
+      height: 58px;
+      background: white;
+      border: 2px solid #BAE6FD;
+      padding: 4px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(2, 132, 199, 0.1);
+      flex-shrink: 0;
     }
-    .tv-item-qr-small img { width: 100%; height: 100%; }
 
+    .tv-item-qr-small img {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* HERO CARD: TIẾP THEO (Tông Xanh Nước Biển Hoàng Gia Sang Trọng) */
     .tv-next-hero-card {
-      background: #FFFFFF;
-      border: 1px solid rgba(0, 0, 0, 0.04);
-      border-radius: 18px;
-      padding: 24px;
-      box-shadow: 0 10px 25px rgba(11, 31, 58, 0.03);
+      background: linear-gradient(135deg, #0284C7 0%, #0369A1 60%, #1E3A8A 100%);
+      color: #FFFFFF;
+      border-radius: 22px;
+      padding: 26px;
+      box-shadow: 0 12px 30px -4px rgba(2, 132, 199, 0.3);
       display: flex;
       flex-direction: column;
-      flex: 1.2;
-      min-height: 250px;
+      align-items: stretch;
       justify-content: center;
+      flex: 1.2;
+      min-height: 260px;
+      position: relative;
+      overflow: hidden;
     }
 
     .tv-hero-label {
-      font-size: clamp(15px, 1.1vw, 18px);
-      font-weight: 800;
-      color: #475569;
+      font-size: clamp(16px, 1.2vw, 20px);
+      font-weight: 900;
+      color: #BAE6FD;
       text-align: center;
       text-transform: uppercase;
-      letter-spacing: 1.5px;
-      margin-bottom: 12px;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
     }
 
     .tv-hero-time {
-      font-size: clamp(44px, 3.5vw, 56px);
+      font-size: clamp(48px, 3.8vw, 62px);
       font-weight: 900;
-      color: #0B1F3A;
+      color: #FFFFFF;
       text-align: center;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
 
     .tv-hero-title {
-      font-size: clamp(22px, 1.7vw, 26px);
+      font-size: clamp(24px, 1.8vw, 28px);
       font-weight: 800;
-      color: #0B1F3A;
+      color: #FFFFFF;
       text-align: center;
       line-height: 1.35;
       margin-bottom: 16px;
@@ -304,44 +364,141 @@
     }
 
     .tv-hero-meta {
-      display: flex; flex-direction: column; gap: 8px; align-items: center; margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
     }
-    .tv-hero-meta-item { font-size: clamp(15px, 1.1vw, 18px); color: #475569; display: flex; align-items: center; gap: 8px; }
+
+    .tv-hero-meta-item {
+      font-size: clamp(16px, 1.2vw, 19px);
+      color: #E0F2FE;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+
+    .tv-hero-meta-item i {
+      color: #BAE6FD;
+    }
 
     .tv-hero-countdown {
-      font-size: clamp(16px, 1.2vw, 20px);
-      font-weight: 800; text-align: center; text-transform: uppercase;
-      padding: 8px 16px; border-radius: 10px; margin-top: auto;
+      font-size: clamp(18px, 1.3vw, 22px);
+      font-weight: 900;
+      text-align: center;
+      text-transform: uppercase;
+      padding: 10px 20px;
+      border-radius: 12px;
+      margin-top: auto;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #FDE047; /* Chữ màu Vàng Hoàng Gia nổi bật trên nền xanh */
+      letter-spacing: 0.5px;
     }
-    .tv-hero-countdown.ongoing { color: #0F766E; background: rgba(15, 118, 110, 0.08); }
-    .tv-hero-countdown.near { color: #B45309; background: rgba(180, 83, 9, 0.08); }
 
-    .tv-tomorrow-section { flex: 0.8; display: flex; flex-direction: column; overflow: hidden; }
-    .tv-tomorrow-list { display: flex; flex-direction: column; gap: 10px; flex: 1; overflow: hidden; }
+    .tv-hero-countdown.ongoing {
+      color: #6EE7B7;
+      background: rgba(16, 185, 129, 0.2);
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+
+    /* Khối Ngày Mai */
+    .tv-tomorrow-section {
+      flex: 0.8;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .tv-tomorrow-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+      overflow: hidden;
+    }
+
     .tv-tomorrow-item {
-      display: flex; align-items: center; padding: 12px 18px;
-      background: #FFFFFF; border-radius: 14px; border: 1px solid rgba(0,0,0,0.03);
+      display: flex;
+      align-items: center;
+      padding: 14px 20px;
+      background: #FFFFFF;
+      border-radius: 16px;
+      border: 1px solid #E0F2FE;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.05);
     }
-    .tv-tomorrow-time { flex: 0 0 65px; font-size: clamp(16px, 1.2vw, 20px); font-weight: 800; color: #0B1F3A; }
-    .tv-tomorrow-title { flex: 1; font-size: clamp(15px, 1.1vw, 18px); font-weight: 700; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 12px; }
 
-    .tv-footer {
-      height: 6vh; display: flex; justify-content: space-between; align-items: center;
-      border-top: 2px solid rgba(11, 31, 58, 0.08); padding-top: 10px;
+    .tv-tomorrow-time {
+      flex: 0 0 75px;
+      font-size: clamp(18px, 1.3vw, 22px);
+      font-weight: 900;
+      color: #0284C7;
     }
-    .tv-footer-left { font-size: clamp(16px, 1.2vw, 20px); color: #334155; font-weight: 600; display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .tv-footer-tag { color: #0B1F3A; font-weight: 900; }
-    .tv-footer-right { font-size: clamp(15px, 1.1vw, 18px); font-weight: 700; color: #0F766E; }
-    .tv-footer-right.offline { color: #B91C1C; }
+
+    .tv-tomorrow-title {
+      flex: 1;
+      font-size: clamp(16px, 1.2vw, 19px);
+      font-weight: 700;
+      color: #1E293B;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-left: 12px;
+    }
+
+    /* Footer Chân Trang Xanh Nước Biển */
+    .tv-footer {
+      height: 6vh;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #FFFFFF;
+      border: 1px solid #E0F2FE;
+      border-radius: 14px;
+      padding: 0 24px;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.05);
+    }
+
+    .tv-footer-left {
+      font-size: clamp(16px, 1.2vw, 20px);
+      color: #1E293B;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tv-footer-tag {
+      color: #0284C7;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+    }
+
+    .tv-footer-right {
+      font-size: clamp(15px, 1.1vw, 18px);
+      font-weight: 800;
+      color: #0284C7;
+    }
+
+    .tv-footer-right.offline {
+      color: #DC2626;
+    }
 
     .btn-tv-fullscreen {
       position: fixed; top: 24px; right: 24px;
-      background: rgba(11, 31, 58, 0.85); color: white; border: none;
-      width: 50px; height: 50px; border-radius: 50%; display: flex;
-      align-items: center; justify-content: center; font-size: 20px;
-      cursor: pointer; z-index: 10000; opacity: 0.3; transition: opacity 0.3s;
+      background: rgba(2, 132, 199, 0.85); color: white; border: none;
+      width: 52px; height: 52px; border-radius: 50%; display: flex;
+      align-items: center; justify-content: center; font-size: 22px;
+      cursor: pointer; z-index: 10000; opacity: 0.4; transition: opacity 0.3s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
-    .btn-tv-fullscreen:hover { opacity: 1; background: #0B1F3A; }
+    .btn-tv-fullscreen:hover { opacity: 1; background: #0369A1; }
   </style>
 </head>
 <body>
@@ -480,10 +637,10 @@
 
       if (todayEvents.length === 0) {
         container.innerHTML = `
-          <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #FFFFFF; border-radius: 18px; border: 1px dashed rgba(11,31,58,0.15); width: 100%;">
-            <i class="fa-solid fa-calendar-xmark" style="font-size: 3.5rem; color: #64748B; margin-bottom: 16px;"></i>
-            <h4 style="font-size: 24px; font-weight: 800; color: #0B1F3A; margin-bottom: 8px;">Không có lịch công tác hôm nay</h4>
-            <p style="font-size: 18px; color: #64748B;">Lịch làm việc sẽ được cập nhật tự động trực tuyến.</p>
+          <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #FFFFFF; border-radius: 20px; border: 2px dashed #BAE6FD; width: 100%;">
+            <i class="fa-solid fa-calendar-xmark" style="font-size: 4rem; color: #0284C7; margin-bottom: 16px;"></i>
+            <h4 style="font-size: 26px; font-weight: 900; color: #0369A1; margin-bottom: 8px;">Không có lịch công tác hôm nay</h4>
+            <p style="font-size: 19px; color: #64748B;">Lịch làm việc sẽ được cập nhật tự động trực tuyến.</p>
           </div>
         `;
         return;
@@ -519,7 +676,7 @@
         else if (evt.tvStatus === 'ongoing') statusHtml = `<span class="tv-badge ongoing"><i class="fa-solid fa-circle"></i> Đang diễn ra</span>`;
         else if (evt.tvStatus === 'upcoming-near') statusHtml = `<span class="tv-badge upcoming-near"><i class="fa-solid fa-clock"></i> Còn ${evt.diffMins} phút</span>`;
 
-        const qrHtml = evt.document_link ? `<div class="tv-item-qr-small"><img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(evt.document_link)}&color=0b1f3a" alt="QR"></div>` : '';
+        const qrHtml = evt.document_link ? `<div class="tv-item-qr-small"><img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(evt.document_link)}&color=0284c7" alt="QR"></div>` : '';
 
         let metaHtml = '';
         if (evt.chairperson) metaHtml += `<div class="tv-item-meta"><i class="fa-solid fa-user-tie"></i><span>Chủ trì: <strong>${evt.chairperson.split(' - ')[1] || evt.chairperson}</strong></span></div>`;
@@ -569,8 +726,8 @@
         } else {
           heroContainer.innerHTML = `
             <div class="tv-hero-label">HÔM NAY</div>
-            <div class="tv-hero-time" style="color: #0F766E;"><i class="fa-solid fa-circle-check"></i></div>
-            <div class="tv-hero-title" style="color: #0F766E; font-size: 22px;">ĐÃ HOÀN THÀNH</div>
+            <div class="tv-hero-time" style="color: #6EE7B7;"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="tv-hero-title" style="color: #FFFFFF; font-size: 24px;">ĐÃ HOÀN THÀNH</div>
             <div class="tv-hero-meta"><div class="tv-hero-meta-item"><span>LỊCH CÔNG TÁC HÔM NAY</span></div></div>
           `;
         }
@@ -584,7 +741,7 @@
         const tomorrowEvents = remainingEvents.filter(evt => evt.start_time.split(' ')[0] === tomorrowStr);
 
         if (tomorrowEvents.length === 0) {
-          tomorrowContainer.innerHTML = `<div style="font-size: 16px; color: #64748B; text-align: center; padding: 16px; border: 1px dashed rgba(0,0,0,0.06); border-radius: 12px; background: white;">Không có lịch công tác ngày mai</div>`;
+          tomorrowContainer.innerHTML = `<div style="font-size: 17px; font-weight: 700; color: #0284C7; text-align: center; padding: 18px; border: 1px dashed #BAE6FD; border-radius: 16px; background: white;">Không có lịch công tác ngày mai</div>`;
         } else {
           tomorrowEvents.sort((a, b) => a.start_time.localeCompare(b.start_time));
           tomorrowEvents.slice(0, 3).forEach(evt => {
