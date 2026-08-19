@@ -27,6 +27,7 @@ app.use(express.json({
   }
 }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/lich', express.static(path.join(__dirname, 'public')));
 
 // Cấu hình mật khẩu quản trị (Mặc định: NghiaLam@2026, có thể thay đổi bằng biến môi trường)
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'NghiaLam@2026';
