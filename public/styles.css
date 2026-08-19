@@ -1,6 +1,13 @@
-/* ==========================================================================
-   CSS CORE DESIGN SYSTEM & VARIABLES (FRESH & VIBRANT SAAS STYLE)
-   ========================================================================== */
+/* FIX MÀN HÌNH TRẮNG: Ẩn tuyệt đối TV Mode Overlay khi ở trang quản trị */
+#tv-mode-container.hidden {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.hidden {
+  display: none !important;
+}
 
 :root {
   /* Modern Executive Government Dashboard Palette */
