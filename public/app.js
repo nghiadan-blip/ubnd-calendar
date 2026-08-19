@@ -1490,86 +1490,104 @@ function exitTVMode() {
 }
 
 async function loadTVData() {
-  const today = new Date();
-  const todayStr = formatDateISO(today);
-
-  // Lấy phạm vi tuần hiện tại (offset = 0)
-  const { monday, sunday } = getWeekRange(0);
-  const startISO = formatDateISO(monday) + ' 00:00';
-  const endISO = formatDateISO(sunday) + ' 23:59';
-  
-  let weekEvents = [];
-  let syncSuccess = false;
-
-  // Luôn thử tải dữ liệu chính thức từ Express Server trước tiên cho giao diện TV sảnh
+  const syncStatusEl = document.getElementById('tv-sync-status');
   try {
-    const res = await fetch(`/api/events?startDate=${formatDateISO(monday)}&endDate=${formatDateISO(sunday)}`);
-    if (res.ok) {
-      weekEvents = await res.json();
-      syncSuccess = true;
-    }
-  } catch (e) {
-    console.warn('TV Mode: Không thể tải lịch từ máy chủ Express, thử fallback...', e);
-  }
+    const today = new Date();
+    const todayStr = formatDateISO(today);
 
-  // Nếu máy chủ offline hoặc không có dữ liệu, mới sử dụng dữ liệu cục bộ (WASM hoặc localStorage)
-  if (weekEvents.length === 0) {
-    if (settings.syncMode === 'wasm-sqlite' && sqlDb) {
-      try {
-        const stmt = sqlDb.prepare("SELECT * FROM events WHERE start_time >= ? AND end_time <= ? ORDER BY start_time ASC");
-        stmt.bind([startISO, endISO]);
-        while (stmt.step()) {
-          weekEvents.push(stmt.getAsObject());
+    // Lấy phạm vi tuần hiện tại (offset = 0)
+    const { monday, sunday } = getWeekRange(0);
+    const startISO = formatDateISO(monday) + ' 00:00';
+    const endISO = formatDateISO(sunday) + ' 23:59';
+    
+    let weekEvents = [];
+    let syncSuccess = false;
+
+    // Luôn thử tải dữ liệu chính thức từ Express Server trước tiên cho giao diện TV sảnh
+    try {
+      const res = await fetch(`/api/events?startDate=${formatDateISO(monday)}&endDate=${formatDateISO(sunday)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          weekEvents = data;
+          syncSuccess = true;
+        } else {
+          console.warn("TV Mode: Dữ liệu trả về không phải là mảng:", data);
         }
-        stmt.free();
+      }
+    } catch (e) {
+      console.warn('TV Mode: Không thể tải lịch từ máy chủ Express, thử fallback...', e);
+    }
+
+    // Nếu máy chủ offline hoặc không có dữ liệu, mới sử dụng dữ liệu cục bộ (WASM hoặc localStorage)
+    if (!Array.isArray(weekEvents) || weekEvents.length === 0) {
+      weekEvents = [];
+      if (settings.syncMode === 'wasm-sqlite' && sqlDb) {
+        try {
+          const stmt = sqlDb.prepare("SELECT * FROM events WHERE start_time >= ? AND end_time <= ? ORDER BY start_time ASC");
+          stmt.bind([startISO, endISO]);
+          while (stmt.step()) {
+            weekEvents.push(stmt.getAsObject());
+          }
+          stmt.free();
+          syncSuccess = true;
+        } catch (e) {
+          console.error("WASM Fallback error in TV Mode:", e);
+        }
+      }
+
+      if (weekEvents.length === 0 && settings.syncMode === 'local') {
+        const localData = JSON.parse(localStorage.getItem('ubnd_calendar_events') || '[]');
+        const startDayOnly = formatDateISO(monday);
+        const endDayOnly = formatDateISO(sunday);
+        weekEvents = localData.filter(evt => {
+          if (!evt || typeof evt.start_time !== 'string') return false;
+          const evtDate = evt.start_time.split(' ')[0];
+          return evtDate >= startDayOnly && evtDate <= endDayOnly;
+        });
         syncSuccess = true;
-      } catch (e) {
-        console.error("WASM Fallback error in TV Mode:", e);
       }
     }
 
-    if (weekEvents.length === 0 && settings.syncMode === 'local') {
-      const localData = JSON.parse(localStorage.getItem('ubnd_calendar_events') || '[]');
-      const startDayOnly = formatDateISO(monday);
-      const endDayOnly = formatDateISO(sunday);
-      weekEvents = localData.filter(evt => {
-        const evtDate = evt.start_time.split(' ')[0];
-        return evtDate >= startDayOnly && evtDate <= endDayOnly;
-      });
-      syncSuccess = true;
+    // Lọc bỏ sự kiện lỗi thiếu trường thời gian để tránh crash
+    weekEvents = weekEvents.filter(evt => evt && typeof evt.start_time === 'string' && typeof evt.end_time === 'string');
+
+    // Sắp xếp lịch họp theo thứ tự thời gian tăng dần
+    weekEvents.sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+    // Cập nhật trạng thái đồng bộ ở Footer TV sảnh
+    if (syncStatusEl) {
+      if (syncSuccess) {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        syncStatusEl.innerHTML = `<i class="fa-solid fa-check"></i> Đồng bộ lúc ${hh}:${mm}`;
+        syncStatusEl.className = 'tv-footer-right';
+      } else {
+        syncStatusEl.innerHTML = `⚠ Mất kết nối`;
+        syncStatusEl.className = 'tv-footer-right offline';
+      }
     }
-  }
 
-  // Sắp xếp lịch họp theo thứ tự thời gian tăng dần
-  weekEvents.sort((a, b) => a.start_time.localeCompare(b.start_time));
+    // Cập nhật nội dung Trọng tâm điều hành từ cấu hình
+    const focusContentEl = document.getElementById('tv-focus-content');
+    if (focusContentEl) {
+      focusContentEl.textContent = settings.tvFocus || 'Hồ sơ đất đai • Thu ngân sách • Giải phóng mặt bằng (GPMB)';
+    }
 
-  // Cập nhật trạng thái đồng bộ ở Footer TV sảnh
-  const syncStatusEl = document.getElementById('tv-sync-status');
-  if (syncStatusEl) {
-    if (syncSuccess) {
-      const now = new Date();
-      const hh = String(now.getHours()).padStart(2, '0');
-      const mm = String(now.getMinutes()).padStart(2, '0');
-      syncStatusEl.innerHTML = `<i class="fa-solid fa-check"></i> Đồng bộ lúc ${hh}:${mm}`;
-      syncStatusEl.className = 'tv-footer-right';
-    } else {
-      syncStatusEl.innerHTML = `⚠ Mất kết nối`;
+    // Chia tách sự kiện hôm nay và các ngày còn lại trong tuần
+    const todayEvents = weekEvents.filter(evt => evt.start_time.split(' ')[0] === todayStr);
+    const remainingEvents = weekEvents.filter(evt => evt.start_time.split(' ')[0] > todayStr);
+
+    renderTVGrid(todayEvents);
+    renderTVUpcomingGrid(remainingEvents, todayEvents);
+  } catch (error) {
+    console.error("Critical error in loadTVData:", error);
+    if (syncStatusEl) {
+      syncStatusEl.innerHTML = `⚠ Lỗi kết xuất`;
       syncStatusEl.className = 'tv-footer-right offline';
     }
   }
-
-  // Cập nhật nội dung Trọng tâm điều hành từ cấu hình
-  const focusContentEl = document.getElementById('tv-focus-content');
-  if (focusContentEl) {
-    focusContentEl.textContent = settings.tvFocus || 'Hồ sơ đất đai • Thu ngân sách • Giải phóng mặt bằng (GPMB)';
-  }
-
-  // Chia tách sự kiện hôm nay và các ngày còn lại trong tuần
-  const todayEvents = weekEvents.filter(evt => evt.start_time.split(' ')[0] === todayStr);
-  const remainingEvents = weekEvents.filter(evt => evt.start_time.split(' ')[0] > todayStr);
-
-  renderTVGrid(todayEvents);
-  renderTVUpcomingGrid(remainingEvents, todayEvents);
 }
 
 function renderTVGrid(todayEvents) {
