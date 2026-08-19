@@ -1484,6 +1484,11 @@ function exitTVMode() {
   document.getElementById('app-container').classList.remove('hidden');
   document.getElementById('tv-mode-container').classList.add('hidden');
   
+  // Tự động thoát khỏi chế độ toàn màn hình trình duyệt nếu đang bật
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(err => console.log('Fullscreen exit notice:', err));
+  }
+
   if (tvAutoScrollInterval) clearInterval(tvAutoScrollInterval);
   if (tvUpcomingAutoScrollInterval) clearInterval(tvUpcomingAutoScrollInterval);
   if (tvDataRefreshInterval) clearInterval(tvDataRefreshInterval);
@@ -1918,6 +1923,16 @@ function setupEventListeners() {
 
   document.getElementById('btn-enter-tv').addEventListener('click', enterTVMode);
   document.getElementById('btn-exit-tv').addEventListener('click', exitTVMode);
+
+  // Cho phép thoát TV Mode bằng cách ấn phím ESC trên bàn phím
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' || e.code === 'Escape') {
+      const tvContainer = document.getElementById('tv-mode-container');
+      if (tvContainer && !tvContainer.classList.contains('hidden')) {
+        exitTVMode();
+      }
+    }
+  });
 
   // Kích hoạt chế độ Fullscreen cho màn hình TV sảnh
   const btnTvFullscreen = document.getElementById('btn-tv-fullscreen');
