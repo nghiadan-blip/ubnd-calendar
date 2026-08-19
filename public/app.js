@@ -1503,9 +1503,15 @@ async function loadTVData() {
     let weekEvents = [];
     let syncSuccess = false;
 
-    // Luôn thử tải dữ liệu chính thức từ Express Server trước tiên cho giao diện TV sảnh
+    // Luôn thử tải dữ liệu chính thức từ Express Server trước tiên cho giao diện TV sảnh (Timeout 3s)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
     try {
-      const res = await fetch(`/api/events?startDate=${formatDateISO(monday)}&endDate=${formatDateISO(sunday)}`);
+      const res = await fetch(`/api/events?startDate=${formatDateISO(monday)}&endDate=${formatDateISO(sunday)}`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -1516,7 +1522,8 @@ async function loadTVData() {
         }
       }
     } catch (e) {
-      console.warn('TV Mode: Không thể tải lịch từ máy chủ Express, thử fallback...', e);
+      clearTimeout(timeoutId);
+      console.warn('TV Mode: Không thể tải lịch từ máy chủ Express (hoặc hết hạn chờ), thử fallback...', e);
     }
 
     // Nếu máy chủ offline hoặc không có dữ liệu, mới sử dụng dữ liệu cục bộ (WASM hoặc localStorage)
