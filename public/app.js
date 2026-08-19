@@ -665,7 +665,18 @@ function renderGrid() {
 
 function createEventCard(evt) {
   const card = document.createElement('div');
-  card.className = `event-card cat-${evt.category}`;
+  
+  // Phân loại trạng thái thời gian thực
+  const now = new Date();
+  const startTime = new Date(evt.start_time.replace(/-/g, '/'));
+  const endTime = new Date(evt.end_time.replace(/-/g, '/'));
+  let calculatedStatus = evt.status || 'scheduled';
+  
+  if (now > endTime) calculatedStatus = 'completed';
+  else if (now >= startTime && now <= endTime) calculatedStatus = 'ongoing';
+  else if (startTime > now && (startTime - now) <= 30 * 60000) calculatedStatus = 'upcoming';
+
+  card.className = `event-card cat-${evt.category} status-${calculatedStatus} ${calculatedStatus}`;
   card.dataset.id = evt.id;
   
   let documentIndicator = '';
@@ -696,8 +707,8 @@ function createEventCard(evt) {
       <span>Nơi họp: <strong>${evt.location}</strong></span>
     </div>
     <div class="event-tags-row">
-      <span class="event-status-badge status-${evt.status}">
-        ${getStatusLabel(evt.status)}
+      <span class="event-status-badge status-${calculatedStatus}">
+        ${getStatusLabel(calculatedStatus)}
       </span>
     </div>
   `;

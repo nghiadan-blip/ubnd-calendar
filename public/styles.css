@@ -1,41 +1,45 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    CSS CORE DESIGN SYSTEM & VARIABLES (FRESH & VIBRANT SAAS STYLE)
    ========================================================================== */
 
 :root {
-  /* Vibrant & Fresh Palette */
-  --primary: #059669; /* Emerald Green */
-  --primary-light: #10B981;
-  --primary-glow: rgba(16, 185, 129, 0.15);
+  /* Executive Government Dashboard Palette */
+  --navy: #102A43;
+  --blue: #2563EB;
+  --teal: #0F766E;
+  --teal-light: #E8F6F3;
+  --amber: #D97706;
+  --amber-light: #FEF3C7;
+  --red: #DC2626;
   
-  --secondary: #0EA5E9; /* Sky Blue */
-  --secondary-light: #38BDF8;
+  --bg-main: #F3F6FA;
+  --bg-card: #FFFFFF;
   
-  --dark-slate: #0F172A; /* Slate Navy */
-  --text-main: #334155; /* Cool Gray */
+  --text-main: #172033;
+  --text-muted: #64748B;
+  --border-color: #DCE4EE;
+  
+  /* Retain mapping to variables used across app components */
+  --primary: #2563EB;
+  --primary-light: #3B82F6;
+  --primary-glow: rgba(37, 99, 235, 0.15);
+  --secondary: #0F766E;
+  --dark-slate: #102A43;
   --text-light: #64748B;
   
-  --bg-fresh: linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 50%, #F0F9FF 100%);
-  --bg-card: rgba(255, 255, 255, 0.85);
-  --border-color: rgba(226, 232, 240, 0.8);
-  --glow-shadow: 0 10px 30px -5px rgba(16, 185, 129, 0.1), 0 4px 6px -2px rgba(16, 185, 129, 0.05);
-  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
-  
-  /* Category Colors */
-  --color-dang-uy: #EF4444; /* Rose Red */
-  --color-dang-uy-bg: #FEF2F2;
-  --color-ubnd: #0EA5E9; /* Sky Blue */
-  --color-ubnd-bg: #F0F9FF;
-  --color-tiep-dan: #10B981; /* Emerald */
-  --color-tiep-dan-bg: #F0FDF4;
-  --color-thuc-dia: #F59E0B; /* Amber */
-  --color-thuc-dia-bg: #FEF3C7;
-  
+  --bg-fresh: #F3F6FA;
+  --glass-shadow: 0 4px 16px rgba(16, 42, 67, 0.05);
+
   /* Status Colors */
-  --color-scheduled: #3B82F6;
-  --color-ongoing: #10B981;
+  --color-scheduled: #2563EB;
+  --color-ongoing: #0F766E;
   --color-completed: #64748B;
-  --color-postponed: #EF4444;
+  --color-postponed: #DC2626;
+  
+  --color-dang-uy: #102A43;
+  --color-ubnd: #2563EB;
+  --color-tiep-dan: #0F766E;
+  --color-thuc-dia: #D97706;
 }
 
 /* Reset & Base Styles */
