@@ -392,6 +392,7 @@ async function loadEvents() {
         events = await res.json();
         renderGrid();
         renderCitizenReception();
+        renderExecutiveDashboard();
         return;
       }
       throw new Error();
@@ -417,6 +418,7 @@ async function loadEvents() {
 
   renderGrid();
   renderCitizenReception();
+  renderExecutiveDashboard();
 }
 
 // Lưu lịch họp mới hoặc cập nhật lịch họp có sẵn
@@ -2448,6 +2450,188 @@ function exitAdminModeForce() {
     document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
     alert('Phiên đăng nhập quản trị hết hạn hoặc mật khẩu đã thay đổi. Vui lòng đăng nhập lại.');
   }
+}
+
+/* ==========================================================================
+   RENDER MODERN EXECUTIVE GOVERNMENT DASHBOARD
+   ========================================================================== */
+function renderExecutiveDashboard() {
+  const containerList = document.getElementById('exec-today-events-list');
+  if (!containerList) return;
+
+  const now = new Date();
+  
+  // Format Today's Date String for Title Section
+  const daysOfWeek = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+  const dayName = daysOfWeek[now.getDay()];
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const yyyy = now.getFullYear();
+  
+  const todayDateStr = `${dayName} • ${dd}/${mm}/${yyyy}`;
+  const execTodayText = document.getElementById('exec-today-date-text');
+  if (execTodayText) execTodayText.textContent = todayDateStr;
+
+  // Format Sync Time
+  const syncTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const syncElem = document.getElementById('exec-sync-time-text');
+  if (syncElem) syncElem.textContent = `Đồng bộ lúc ${syncTimeStr}`;
+
+  // Today ISO Date YYYY-MM-DD
+  const todayISO = `${yyyy}-${mm}-${dd}`;
+  
+  // Tomorrow ISO Date YYYY-MM-DD
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tDD = String(tomorrow.getDate()).padStart(2, '0');
+  const tMM = String(tomorrow.getMonth() + 1).padStart(2, '0');
+  const tYYYY = tomorrow.getFullYear();
+  const tomorrowISO = `${tYYYY}-${tMM}-${tDD}`;
+
+  // Filter Today's events
+  const todayEvents = events.filter(evt => {
+    return evt.start_time && evt.start_time.split(' ')[0] === todayISO;
+  }).sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+  // Filter Tomorrow's events
+  const tomorrowEvents = events.filter(evt => {
+    return evt.start_time && evt.start_time.split(' ')[0] === tomorrowISO;
+  }).sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+  // Render Today's Events List
+  if (todayEvents.length === 0) {
+    containerList.innerHTML = `
+      <div style="text-align: center; padding: 28px; color: #64748B; font-weight: 600;">
+        <i class="fa-regular fa-calendar-check" style="font-size: 2.2rem; color: #2563EB; margin-bottom: 10px; display: block;"></i>
+        Không có lịch họp nào ghi nhận trong hôm nay.
+      </div>
+    `;
+  } else {
+    containerList.innerHTML = todayEvents.map(evt => {
+      const startTimeObj = new Date(evt.start_time.replace(/-/g, '/'));
+      const endTimeObj = new Date(evt.end_time.replace(/-/g, '/'));
+      const startTimeStr = evt.start_time.split(' ')[1] || '00:00';
+
+      let status = 'scheduled';
+      let iconClass = 'fa-regular fa-calendar-check';
+      let badgeText = 'SẮP DIỄN RA';
+
+      if (evt.status === 'emergency' || evt.category === 'emergency' || evt.is_emergency) {
+        status = 'emergency';
+        iconClass = 'fa-solid fa-triangle-exclamation';
+        badgeText = '! KHẨN';
+      } else if (now > endTimeObj) {
+        status = 'completed';
+        iconClass = 'fa-solid fa-check';
+        badgeText = '✓ ĐÃ KẾT THÚC';
+      } else if (now >= startTimeObj && now <= endTimeObj) {
+        status = 'ongoing';
+        iconClass = 'fa-solid fa-chart-line';
+        badgeText = '● ĐANG DIỄN RA';
+      } else {
+        const diffMinutes = Math.round((startTimeObj - now) / 60000);
+        if (diffMinutes > 0 && diffMinutes <= 60) {
+          status = 'upcoming';
+          iconClass = 'fa-regular fa-clock';
+          badgeText = `CÒN ${diffMinutes} PHÚT`;
+        }
+      }
+
+      return `
+        <div class="exec-event-row status-${status}" onclick="openDetailsModalById('${evt.id}')">
+          <div class="exec-icon-circle">
+            <i class="${iconClass}"></i>
+          </div>
+          <div class="exec-event-time">${startTimeStr}</div>
+          <div class="exec-event-body">
+            <div class="exec-event-title">${evt.title}</div>
+            <div class="exec-event-meta">
+              <span class="exec-event-meta-item"><i class="fa-solid fa-location-dot" style="color: #2563EB;"></i> ${evt.location || 'Chưa xếp phòng'}</span>
+              <span class="exec-event-meta-item"><i class="fa-solid fa-user-tie" style="color: #2563EB;"></i> Chủ trì: ${evt.chairperson || 'Thường trực UBND'}</span>
+            </div>
+          </div>
+          <div class="exec-status-badge ${status}">
+            ${badgeText}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Render Hero Card "TIẾP THEO"
+  const heroCard = document.getElementById('exec-hero-card');
+  if (heroCard) {
+    const nextEvent = todayEvents.find(evt => {
+      const endTimeObj = new Date(evt.end_time.replace(/-/g, '/'));
+      return now <= endTimeObj;
+    }) || todayEvents[0];
+
+    if (nextEvent) {
+      const startTimeObj = new Date(nextEvent.start_time.replace(/-/g, '/'));
+      const endTimeObj = new Date(nextEvent.end_time.replace(/-/g, '/'));
+      const startTimeStr = nextEvent.start_time.split(' ')[1] || '00:00';
+      const heroTimeElem = document.getElementById('exec-hero-time');
+      const heroTitleElem = document.getElementById('exec-hero-title');
+      const heroLocElem = document.getElementById('exec-hero-location');
+      const heroCountdownElem = document.getElementById('exec-hero-countdown');
+
+      if (heroTimeElem) heroTimeElem.textContent = startTimeStr;
+      if (heroTitleElem) heroTitleElem.textContent = nextEvent.title;
+      if (heroLocElem) heroLocElem.innerHTML = `<i class="fa-solid fa-location-dot"></i> <span>${nextEvent.location || 'Phòng họp UBND xã'}</span>`;
+      
+      if (heroCountdownElem) {
+        if (now >= startTimeObj && now <= endTimeObj) {
+          heroCountdownElem.innerHTML = `<i class="fa-solid fa-bolt"></i> <span>Đang diễn ra</span>`;
+        } else if (now < startTimeObj) {
+          const diffMin = Math.round((startTimeObj - now) / 60000);
+          if (diffMin > 60) {
+            const hrs = Math.floor(diffMin / 60);
+            const mins = diffMin % 60;
+            heroCountdownElem.innerHTML = `<i class="fa-regular fa-clock"></i> <span>Còn ${hrs} giờ ${mins} phút</span>`;
+          } else {
+            heroCountdownElem.innerHTML = `<i class="fa-regular fa-clock"></i> <span>Còn ${diffMin} phút</span>`;
+          }
+        } else {
+          heroCountdownElem.innerHTML = `<i class="fa-solid fa-check"></i> <span>Đã hoàn thành</span>`;
+        }
+      }
+    } else {
+      const heroTimeElem = document.getElementById('exec-hero-time');
+      const heroTitleElem = document.getElementById('exec-hero-title');
+      const heroCountdownElem = document.getElementById('exec-hero-countdown');
+      if (heroTimeElem) heroTimeElem.textContent = '17:00';
+      if (heroTitleElem) heroTitleElem.textContent = 'Xử lý công việc nội bộ và ký văn bản';
+      if (heroCountdownElem) heroCountdownElem.innerHTML = `<i class="fa-regular fa-clock"></i> <span>Hoàn thành hôm nay</span>`;
+    }
+  }
+
+  // Render Card "Ngày mai"
+  const tomorrowList = document.getElementById('exec-tomorrow-events-list');
+  if (tomorrowList) {
+    if (tomorrowEvents.length === 0) {
+      tomorrowList.innerHTML = `
+        <div style="font-size: 0.85rem; color: #64748B; padding: 6px 0;">
+          Chưa có lịch họp dự kiến ngày mai.
+        </div>
+      `;
+    } else {
+      tomorrowList.innerHTML = tomorrowEvents.slice(0, 4).map(evt => {
+        const startTimeStr = evt.start_time.split(' ')[1] || '07:30';
+        return `
+          <div class="exec-tomorrow-item" onclick="openDetailsModalById('${evt.id}')">
+            <div class="exec-tomorrow-time">${startTimeStr}</div>
+            <div class="exec-tomorrow-title">${evt.title}</div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+}
+
+// Helper to open details modal by ID
+function openDetailsModalById(id) {
+  const evt = events.find(e => e.id == id);
+  if (evt) openDetailsModal(evt);
 }
 
 

@@ -11,7 +11,7 @@
   <!-- FontAwesome for Premium Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=2.0.6">
+  <link rel="stylesheet" href="styles.css?v=2.0.7">
   <!-- External Libraries via CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -24,15 +24,15 @@
   <!-- ========================================== -->
   <div id="app-container">
     
-    <!-- Top Header -->
+    <!-- Top Header - Executive Gradient -->
     <header class="main-header">
       <div class="header-brand">
         <div class="emblem-container">
           <i class="fa-solid fa-landmark emblem-icon"></i>
         </div>
         <div class="header-titles">
-          <h1>ỦY BAN NHÂN DÂN XÃ NGHĨA LÂM</h1>
-          <p>Hệ thống Thông tin & Quản lý Lịch công tác điện tử</p>
+          <h1>UBND XÃ NGHĨA LÂM</h1>
+          <p>HỆ THỐNG LỊCH CÔNG TÁC</p>
         </div>
       </div>
       
@@ -41,28 +41,117 @@
         <div class="live-clock-widget">
           <i class="fa-regular fa-clock"></i>
           <span id="live-time">00:00:00</span>
-          <span class="clock-divider">|</span>
-          <span id="live-date">Thứ ---, 00/00/0000</span>
         </div>
         
-        <!-- Toggle Admin Mode -->
-        <button id="btn-toggle-admin" class="btn btn-outline">
-          <i class="fa-solid fa-lock"></i>
-          <span>Văn phòng UBND</span>
+        <!-- Toggle Admin Mode Pill -->
+        <button id="btn-toggle-admin" class="pill-btn">
+          <i class="fa-solid fa-gear"></i>
+          <span>Chế độ quản trị</span>
         </button>
         
-        <!-- Open TV Mode -->
-        <button id="btn-enter-tv" class="btn btn-vibrant">
+        <!-- Sync Google Calendar Pill -->
+        <div class="pill-btn sync-pill" id="sync-status-pill">
+          <i class="fa-solid fa-calendar-check"></i>
+          <span>Đồng bộ Google Calendar ✓</span>
+        </div>
+
+        <!-- Open TV Mode Pill -->
+        <button id="btn-enter-tv" class="pill-btn">
           <i class="fa-solid fa-tv"></i>
           <span>Hiển thị TV sảnh</span>
         </button>
         
         <!-- Settings Button -->
-        <button id="btn-settings" class="btn btn-icon-only" title="Cấu hình hệ thống">
-          <i class="fa-solid fa-gear"></i>
+        <button id="btn-settings" class="btn btn-icon-only" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); color: white;" title="Cấu hình hệ thống">
+          <i class="fa-solid fa-sliders"></i>
         </button>
       </div>
     </header>
+
+    <!-- Executive Title Section -->
+    <section class="exec-title-section">
+      <div class="exec-title-left">
+        <div class="exec-title-icon-box">
+          <i class="fa-regular fa-calendar-check"></i>
+        </div>
+        <div class="exec-title-text">
+          <h1>Lịch công tác</h1>
+          <p>Hệ thống Thông tin & Quản lý Lịch công tác điện tử – UBND xã Nghĩa Lâm</p>
+        </div>
+      </div>
+      
+      <div class="exec-today-card">
+        <div class="exec-today-icon">
+          <i class="fa-solid fa-calendar-day"></i>
+        </div>
+        <div class="exec-today-info">
+          <span class="exec-today-label">HÔM NAY</span>
+          <span class="exec-today-date" id="exec-today-date-text">Thứ Tư • 19/08/2026</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Multi-color Accent Rainbow Line -->
+    <div class="exec-accent-line"></div>
+
+    <!-- Executive Dashboard Main Grid (Lịch hôm nay + Tiếp theo + Ngày mai) -->
+    <div class="exec-dashboard-grid" id="exec-dashboard-container">
+      
+      <!-- Left Column: Lịch hôm nay -->
+      <div class="exec-card-main">
+        <div class="exec-card-header">
+          <i class="fa-solid fa-calendar-day" style="color: #2563EB;"></i>
+          <span>Lịch hôm nay</span>
+        </div>
+        <div class="exec-events-list" id="exec-today-events-list">
+          <!-- Dynamic Event Rows populated by JS -->
+        </div>
+      </div>
+
+      <!-- Right Column: Card TIẾP THEO & Card Ngày mai -->
+      <div class="exec-card-right-group">
+        <!-- Card TIẾP THEO -->
+        <div class="exec-hero-card" id="exec-hero-card">
+          <div class="exec-hero-tag">>> TIẾP THEO</div>
+          <div class="exec-hero-time" id="exec-hero-time">--:--</div>
+          <div class="exec-hero-title" id="exec-hero-title">Đang cập nhật...</div>
+          <div class="exec-hero-location" id="exec-hero-location">
+            <i class="fa-solid fa-location-dot"></i> <span>Phòng họp</span>
+          </div>
+          <div class="exec-hero-countdown-pill" id="exec-hero-countdown">
+            <i class="fa-regular fa-clock"></i> <span>Đang chờ...</span>
+          </div>
+        </div>
+
+        <!-- Card Ngày mai -->
+        <div class="exec-tomorrow-card">
+          <div class="exec-tomorrow-header">
+            <i class="fa-solid fa-calendar-days" style="color: #2563EB;"></i>
+            <span>Ngày mai</span>
+          </div>
+          <div class="exec-tomorrow-list" id="exec-tomorrow-events-list">
+            <!-- Dynamic Tomorrow Events populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Executive Focus Footer Bar -->
+    <div class="exec-focus-footer">
+      <div class="exec-focus-left">
+        <div class="exec-focus-icon">
+          <i class="fa-solid fa-bullseye"></i>
+        </div>
+        <div>
+          <span class="exec-focus-tag">◎ TRỌNG TÂM:</span>
+          <span>Hồ sơ đất đai • Thu ngân sách • GPMB • Cải cách hành chính</span>
+        </div>
+      </div>
+      <div class="exec-focus-right">
+        <span class="exec-sync-dot"></span>
+        <span id="exec-sync-time-text">Đồng bộ lúc --:--</span>
+      </div>
+    </div>
 
     <!-- Main Workspace Layout -->
     <div class="main-layout">

@@ -3,43 +3,43 @@
    ========================================================================== */
 
 :root {
-  /* Executive Government Dashboard Palette */
-  --navy: #102A43;
-  --blue: #2563EB;
-  --teal: #0F766E;
-  --teal-light: #E8F6F3;
-  --amber: #D97706;
-  --amber-light: #FEF3C7;
-  --red: #DC2626;
-  
-  --bg-main: #F3F6FA;
+  /* Modern Executive Government Dashboard Palette */
+  --deep-navy: #06183A;
+  --navy: #0B2D69;
+  --indigo: #172C82;
+  --royal-blue: #2563EB;
+  --cyan: #06B6D4;
+  --teal: #0EA5A8;
+  --emerald: #10B981;
+  --amber: #F59E0B;
+  --orange: #D97706;
+  --coral-red: #F43F5E;
+  --bg-main: #F6F8FC;
   --bg-card: #FFFFFF;
+  --text-primary: #101F3D;
+  --text-secondary: #64748B;
+  --border-color: #E4EAF2;
   
-  --text-main: #172033;
-  --text-muted: #64748B;
-  --border-color: #DCE4EE;
-  
-  /* Retain mapping to variables used across app components */
+  /* App token mappings */
   --primary: #2563EB;
   --primary-light: #3B82F6;
-  --primary-glow: rgba(37, 99, 235, 0.15);
-  --secondary: #0F766E;
-  --dark-slate: #102A43;
+  --dark-slate: #06183A;
+  --text-main: #101F3D;
   --text-light: #64748B;
   
-  --bg-fresh: #F3F6FA;
-  --glass-shadow: 0 4px 16px rgba(16, 42, 67, 0.05);
+  --bg-fresh: #F6F8FC;
+  --glass-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 
   /* Status Colors */
   --color-scheduled: #2563EB;
-  --color-ongoing: #0F766E;
+  --color-ongoing: #0EA5A8;
   --color-completed: #64748B;
-  --color-postponed: #DC2626;
+  --color-postponed: #F43F5E;
   
-  --color-dang-uy: #102A43;
+  --color-dang-uy: #06183A;
   --color-ubnd: #2563EB;
-  --color-tiep-dan: #0F766E;
-  --color-thuc-dia: #D97706;
+  --color-tiep-dan: #0EA5A8;
+  --color-thuc-dia: #F59E0B;
 }
 
 /* Reset & Base Styles */
@@ -51,8 +51,8 @@
 
 body {
   font-family: 'Be Vietnam Pro', sans-serif;
-  color: var(--text-main);
-  background: var(--bg-fresh);
+  color: var(--text-primary);
+  background: var(--bg-main);
   background-attachment: fixed;
   line-height: 1.6;
   overflow-x: hidden;
@@ -67,24 +67,22 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding: 20px;
+  padding: 24px 32px;
   max-width: 1600px;
   margin: 0 auto;
 }
 
-/* Header Design */
+/* Header Design - Modern Executive Navy/Indigo Gradient */
 .main-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--bg-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
-  padding: 16px 28px;
-  box-shadow: var(--glass-shadow);
-  margin-bottom: 20px;
+  background: linear-gradient(115deg, #06183A 0%, #0B2D69 55%, #172C82 100%);
+  border-radius: 18px;
+  padding: 18px 30px;
+  box-shadow: 0 10px 25px rgba(6, 24, 58, 0.25);
+  margin-bottom: 24px;
+  color: #FFFFFF;
 }
 
 .header-brand {
@@ -96,30 +94,33 @@ body {
 .emblem-container {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
 }
 
 .emblem-icon {
   font-size: 22px;
-  color: white;
+  color: #FDE047;
 }
 
 .header-titles h1 {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--dark-slate);
-  letter-spacing: 0.5px;
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
 }
 
 .header-titles p {
   font-size: 0.85rem;
-  color: var(--text-light);
-  font-weight: 500;
+  color: #93C5FD;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
 }
 
 .header-actions {
@@ -128,22 +129,50 @@ body {
   gap: 12px;
 }
 
+/* Pill Control Buttons */
+.pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  padding: 8px 18px;
+  color: #FFFFFF;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.pill-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.pill-btn.sync-pill {
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6EE7B7;
+}
+
 /* Live Clock Widget */
 .live-clock-widget {
-  background: rgba(241, 245, 249, 0.8);
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 12px;
-  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  padding: 8px 18px;
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--dark-slate);
+  color: #FFFFFF;
 }
 
 .clock-divider {
-  color: #CBD5E1;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 /* ==========================================================================
@@ -1264,5 +1293,507 @@ body {
 .btn-tv-fullscreen:hover {
   opacity: 1 !important;
   background: #0369A1;
+}
+
+/* ==========================================================================
+   MODERN EXECUTIVE GOVERNMENT DASHBOARD STYLING
+   ========================================================================== */
+
+.exec-title-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.exec-title-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.exec-title-icon-box {
+  width: 52px;
+  height: 52px;
+  background: #FFFFFF;
+  border: 1px solid #E4EAF2;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  font-size: 24px;
+  color: #2563EB;
+}
+
+.exec-title-text h1 {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #06183A;
+  line-height: 1.2;
+}
+
+.exec-title-text p {
+  font-size: 0.9rem;
+  color: #64748B;
+  font-weight: 500;
+}
+
+.exec-accent-line {
+  height: 3px;
+  width: 100%;
+  background: linear-gradient(90deg, #2563EB, #06B6D4, #10B981, #F59E0B, #EF4444);
+  border-radius: 999px;
+  margin: 12px 0 24px 0;
+}
+
+/* Card Ngày hiện tại (Right side of title) */
+.exec-today-card {
+  background: #FFFFFF;
+  border: 1px solid #E4EAF2;
+  border-radius: 16px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+}
+
+.exec-today-icon {
+  width: 44px;
+  height: 44px;
+  background: #EFF6FF;
+  color: #2563EB;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.exec-today-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.exec-today-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #2563EB;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.exec-today-date {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #06183A;
+}
+
+/* Executive Dashboard Grid Layout */
+.exec-dashboard-grid {
+  display: grid;
+  grid-template-columns: 7fr 3fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+/* Card Lịch hôm nay (Main Card) */
+.exec-card-main {
+  background: #FFFFFF;
+  border: 1px solid #E4EAF2;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.exec-card-header {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #06183A;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exec-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Event Row Design */
+.exec-event-row {
+  display: flex;
+  align-items: center;
+  background: #FFFFFF;
+  border: 1px solid #E4EAF2;
+  border-left: 6px solid #2563EB;
+  border-radius: 14px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+  transition: all 0.2s ease;
+  gap: 18px;
+  position: relative;
+}
+
+.exec-event-row:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.07);
+}
+
+/* Status A: Completed (Đã kết thúc) */
+.exec-event-row.status-completed {
+  border-left-color: #94A3B8 !important;
+  background: #FBFCFE !important;
+  opacity: 0.75 !important;
+}
+
+.exec-event-row.status-completed .exec-event-title {
+  color: #64748B !important;
+}
+
+.exec-event-row.status-completed .exec-icon-circle {
+  background: #F1F5F9;
+  color: #64748B;
+}
+
+/* Status B: Ongoing (Đang diễn ra - PROMINENT CARD) */
+.exec-event-row.status-ongoing {
+  border-left-color: #0EA5A8 !important;
+  background: linear-gradient(90deg, #ECFEFF 0%, #F0FDFA 100%) !important;
+  border-color: #99E6E0 !important;
+  box-shadow: 0 8px 24px rgba(13, 148, 136, 0.12) !important;
+}
+
+.exec-event-row.status-ongoing .exec-event-time {
+  color: #087F83 !important;
+}
+
+.exec-event-row.status-ongoing .exec-event-title {
+  color: #086A70 !important;
+  font-weight: 800;
+}
+
+.exec-event-row.status-ongoing .exec-icon-circle {
+  background: #0EA5A8;
+  color: #FFFFFF;
+}
+
+/* Status C: Upcoming (Sắp diễn ra) */
+.exec-event-row.status-upcoming {
+  border-left-color: #F59E0B !important;
+  background: linear-gradient(90deg, #FFFBEB 0%, #FFF7ED 100%) !important;
+  border-color: #FDE68A !important;
+}
+
+.exec-event-row.status-upcoming .exec-event-time {
+  color: #B45309 !important;
+}
+
+.exec-event-row.status-upcoming .exec-icon-circle {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+/* Status D: Urgent/Khẩn */
+.exec-event-row.status-emergency,
+.exec-event-row.status-postponed {
+  border-left-color: #F43F5E !important;
+  background: #FFF5F5 !important;
+  border-color: #FCA5A5 !important;
+}
+
+.exec-event-row.status-emergency .exec-icon-circle {
+  background: #FFE4E6;
+  color: #F43F5E;
+}
+
+.exec-icon-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  background: #EFF6FF;
+  color: #2563EB;
+}
+
+.exec-event-time {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #06183A;
+  flex: 0 0 75px;
+}
+
+.exec-event-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.exec-event-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #101F3D;
+  line-height: 1.3;
+}
+
+.exec-event-meta {
+  font-size: 0.82rem;
+  color: #64748B;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.exec-event-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Badges Pill Format */
+.exec-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.exec-status-badge.completed {
+  background: #EEF2F6;
+  color: #64748B;
+}
+
+.exec-status-badge.ongoing {
+  background: #CCFBF1;
+  color: #0F766E;
+  border: 1px solid #99E6E0;
+}
+
+.exec-status-badge.ongoing::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0EA5A8;
+  display: inline-block;
+  animation: pulseDot 1.5s infinite;
+}
+
+@keyframes pulseDot {
+  0% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0.4; transform: scale(0.9); }
+}
+
+.exec-status-badge.upcoming {
+  background: #FEF3C7;
+  color: #B45309;
+  border: 1px solid #FDE68A;
+}
+
+.exec-status-badge.emergency {
+  background: #FFE4E6;
+  color: #F43F5E;
+  border: 1px solid #FECDD3;
+}
+
+/* Right Column: Hero Next Card & Tomorrow Card */
+.exec-card-right-group {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Card TIẾP THEO */
+.exec-hero-card {
+  background: linear-gradient(135deg, #FFF8E7 0%, #FFF1C7 100%);
+  border: 1px solid #FDE68A;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.exec-hero-tag {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #D97706;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.exec-hero-time {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #C56A00;
+  line-height: 1;
+}
+
+.exec-hero-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #101F3D;
+  line-height: 1.35;
+}
+
+.exec-hero-location {
+  font-size: 0.85rem;
+  color: #78350F;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.exec-hero-countdown-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFFBEB;
+  border: 1px solid #FCD34D;
+  color: #B45309;
+  font-weight: 800;
+  font-size: 0.8rem;
+  padding: 6px 14px;
+  border-radius: 999px;
+  align-self: flex-start;
+  margin-top: 6px;
+}
+
+/* Card Ngày mai */
+.exec-tomorrow-card {
+  background: #FFFFFF;
+  border: 1px solid #E4EAF2;
+  border-radius: 20px;
+  padding: 20px 24px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.exec-tomorrow-header {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #06183A;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exec-tomorrow-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.exec-tomorrow-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #E8EDF4;
+}
+
+.exec-tomorrow-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.exec-tomorrow-time {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #2563EB;
+  flex: 0 0 55px;
+}
+
+.exec-tomorrow-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #101F3D;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Footer TRỌNG TÂM */
+.exec-focus-footer {
+  background: #FFFFFF;
+  border: 1px solid #E4EAF2;
+  border-radius: 16px;
+  padding: 14px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  margin-bottom: 24px;
+}
+
+.exec-focus-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  color: #101F3D;
+  font-weight: 600;
+}
+
+.exec-focus-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #2563EB;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.exec-focus-tag {
+  color: #2563EB;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.exec-focus-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #06183A;
+  border-left: 1px solid #E4EAF2;
+  padding-left: 20px;
+}
+
+.exec-sync-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #10B981;
+  display: inline-block;
 }
 
