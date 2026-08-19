@@ -42,19 +42,40 @@
       padding-bottom: 12px;
     }
 
+    .tv-brand {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .tv-emblem-img {
+      height: clamp(52px, 4.2vw, 68px);
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
+      flex-shrink: 0;
+    }
+
+    .tv-brand-titles {
+      display: flex;
+      flex-direction: column;
+    }
+
     .tv-brand h2 {
-      font-size: clamp(26px, 2.3vw, 34px);
-      font-weight: 800;
+      font-size: clamp(24px, 2.1vw, 32px);
+      font-weight: 900;
       color: #0B1F3A;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      line-height: 1.1;
     }
 
     .tv-subbrand {
-      font-size: clamp(15px, 1.1vw, 18px);
+      font-size: clamp(13px, 1vw, 16px);
       font-weight: 700;
-      color: #475569;
-      letter-spacing: 1px;
+      color: #0F766E;
+      letter-spacing: 1.2px;
+      margin-top: 4px;
     }
 
     .tv-clock-area {
@@ -331,8 +352,11 @@
     
     <header class="tv-header">
       <div class="tv-brand">
-        <h2>ỦY BAN NHÂN DÂN XÃ NGHĨA LÂM</h2>
-        <span class="tv-subbrand">LỊCH CÔNG TÁC</span>
+        <img src="emblem.svg" class="tv-emblem-img" alt="Quốc huy Việt Nam" onerror="this.onerror=null; this.src='emblem.png';">
+        <div class="tv-brand-titles">
+          <h2>ỦY BAN NHÂN DÂN XÃ NGHĨA LÂM</h2>
+          <span class="tv-subbrand">HỆ THỐNG THÔNG TIN & LỊCH CÔNG TÁC ĐIỆN TỬ</span>
+        </div>
       </div>
       
       <div class="tv-clock-area">

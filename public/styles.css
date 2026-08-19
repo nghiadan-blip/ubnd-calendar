@@ -813,21 +813,41 @@ body {
   justify-content: center;
 }
 
+.tv-brand {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.tv-emblem-img {
+  height: clamp(52px, 4.2vw, 68px);
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
+  flex-shrink: 0;
+}
+
+.tv-brand-titles {
+  display: flex;
+  flex-direction: column;
+}
+
 .tv-brand h2 {
-  font-size: clamp(26px, 2.3vw, 34px);
-  font-weight: 800;
+  font-size: clamp(24px, 2.1vw, 32px);
+  font-weight: 900;
   color: #0B1F3A;
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  line-height: 1.1;
 }
 
 .tv-subbrand {
-  font-size: clamp(15px, 1.1vw, 18px);
+  font-size: clamp(13px, 1vw, 16px);
   font-weight: 700;
-  color: #475569;
-  margin-top: 2px;
-  letter-spacing: 1px;
+  color: #0F766E;
+  margin-top: 4px;
+  letter-spacing: 1.2px;
 }
 
 .tv-clock-area {
