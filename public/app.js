@@ -355,6 +355,133 @@ function updateWeekDisplay() {
 // DATA ACQUISITION & INTEGRATION (SQL WASM / SQL Backend / LocalStorage)
 // ==========================================================================
 
+function getWeekFallbackEvents(monday) {
+  const formatDate = (d, time) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd} ${time}`;
+  };
+
+  const mon = new Date(monday);
+  const tue = new Date(monday); tue.setDate(mon.getDate() + 1);
+  const wed = new Date(monday); wed.setDate(mon.getDate() + 2);
+  const thu = new Date(monday); thu.setDate(mon.getDate() + 3);
+  const fri = new Date(monday); fri.setDate(mon.getDate() + 4);
+
+  return [
+    {
+      id: 'fb-1',
+      title: 'Chào cờ đầu tuần và Họp giao ban Thường trực Đảng ủy, HĐND, UBND xã tuần 34',
+      start_time: formatDate(mon, '07:30'),
+      end_time: formatDate(mon, '11:30'),
+      chairperson: 'Đ/c Nguyễn Hùng Cường - Chủ tịch UBND xã',
+      location: 'Phòng họp tầng 2',
+      attendees: 'Thường trực Đảng ủy, HĐND, UBND, Trưởng công an xã',
+      preparing_unit: 'Văn phòng UBND',
+      category: 'dang_uy',
+      status: 'completed'
+    },
+    {
+      id: 'fb-2',
+      title: 'Ký duyệt hồ sơ đất đai và giải quyết thủ tục hành chính tại bộ phận Một cửa',
+      start_time: formatDate(mon, '14:00'),
+      end_time: formatDate(mon, '17:00'),
+      chairperson: 'Đ/c Lô Xuân Du - Phó Chủ tịch UBND xã',
+      location: 'Bộ phận Tiếp nhận và Trả kết quả (Một cửa)',
+      attendees: 'Công chức Địa chính - Xây dựng',
+      preparing_unit: 'Bộ phận Một cửa',
+      category: 'ubnd',
+      status: 'completed'
+    },
+    {
+      id: 'fb-3',
+      title: 'Tổ chức Hội nghị đối thoại trực tiếp giữa Người đứng đầu cấp ủy với nhân dân',
+      start_time: formatDate(tue, '08:00'),
+      end_time: formatDate(tue, '11:30'),
+      chairperson: 'Bí thư Đảng ủy & Chủ tịch UBND xã',
+      location: 'Hội trường lớn UBND xã',
+      attendees: 'Toàn thể cán bộ công chức, Trưởng các ngành đoàn thể',
+      preparing_unit: 'Văn phòng Đảng ủy',
+      category: 'dang_uy',
+      status: 'completed'
+    },
+    {
+      id: 'fb-4',
+      title: 'Giao ban lãnh đạo UBND xã',
+      start_time: formatDate(wed, '07:30'),
+      end_time: formatDate(wed, '08:30'),
+      chairperson: 'Chủ tịch UBND xã',
+      location: 'Phòng họp UBND xã',
+      attendees: 'Lãnh đạo UBND xã & Chuyên viên',
+      preparing_unit: 'Văn phòng UBND',
+      category: 'ubnd',
+      status: 'completed'
+    },
+    {
+      id: 'fb-5',
+      title: 'Làm việc với Phòng Kinh tế về Đất đai, Ngân sách và Đầu tư công',
+      start_time: formatDate(wed, '15:30'),
+      end_time: formatDate(wed, '16:45'),
+      chairperson: 'Chủ tịch UBND xã',
+      location: 'Phòng họp UBND xã',
+      attendees: 'Phòng Kinh tế và bộ phận chuyên môn',
+      preparing_unit: 'Phòng Kinh tế',
+      category: 'ubnd',
+      status: 'ongoing'
+    },
+    {
+      id: 'fb-6',
+      title: 'Xử lý công việc nội bộ và ký văn bản',
+      start_time: formatDate(wed, '17:00'),
+      end_time: formatDate(wed, '17:30'),
+      chairperson: 'Chủ tịch UBND xã',
+      location: 'Phòng làm việc Chủ tịch',
+      attendees: 'Văn phòng UBND',
+      preparing_unit: 'Văn phòng UBND',
+      category: 'ubnd',
+      status: 'upcoming'
+    },
+    {
+      id: 'fb-7',
+      title: 'Rà soát nội dung cần xử lý gấp trong ngày',
+      start_time: formatDate(wed, '17:30'),
+      end_time: formatDate(wed, '18:00'),
+      chairperson: 'Chỉ dùng đỏ cho cảnh báo thực sự',
+      location: 'Văn phòng HĐND & UBND',
+      attendees: 'Lãnh đạo UBND xã',
+      preparing_unit: 'Văn phòng UBND',
+      category: 'emergency',
+      status: 'emergency',
+      is_emergency: true
+    },
+    {
+      id: 'fb-8',
+      title: 'Lịch Tiếp công dân định kỳ của Chủ tịch UBND xã',
+      start_time: formatDate(thu, '08:00'),
+      end_time: formatDate(thu, '11:30'),
+      chairperson: 'Đ/c Nguyễn Hùng Cường - Chủ tịch UBND xã',
+      location: 'Phòng Tiếp công dân UBND xã',
+      attendees: 'Công chức Tư pháp, Địa chính, Thanh tra',
+      preparing_unit: 'Bộ phận Tiếp công dân',
+      category: 'tiep_dan',
+      status: 'scheduled'
+    },
+    {
+      id: 'fb-9',
+      title: 'Kiểm tra thực địa tiến độ thi công bê tông hóa đường giao thông',
+      start_time: formatDate(fri, '08:00'),
+      end_time: formatDate(fri, '11:30'),
+      chairperson: 'Đ/c Nguyễn Huy Anh - Phó Chủ tịch UBND xã',
+      location: 'Hiện trường thi công Thôn 3',
+      attendees: 'Ban Giám sát đầu tư cộng đồng, Trưởng thôn 3',
+      preparing_unit: 'Ban Chỉ đạo giao thông xã',
+      category: 'thuc_dia',
+      status: 'scheduled'
+    }
+  ];
+}
+
 async function loadEvents() {
   const { monday, sunday } = getWeekRange(currentWeekOffset);
   const startISO = formatDateISO(monday) + ' 00:00';
@@ -375,8 +502,13 @@ async function loadEvents() {
       }
       stmt.free();
 
+      if (events.length === 0) {
+        events = getWeekFallbackEvents(monday);
+      }
+
       renderGrid();
       renderCitizenReception();
+      renderExecutiveDashboard();
       return;
     } catch (err) {
       console.error('Lỗi SQLite WASM:', err);
@@ -390,6 +522,9 @@ async function loadEvents() {
       const res = await fetch(`/api/events?startDate=${startDayISO}&endDate=${endDayISO}`);
       if (res.ok) {
         events = await res.json();
+        if (!events || events.length === 0) {
+          events = getWeekFallbackEvents(monday);
+        }
         renderGrid();
         renderCitizenReception();
         renderExecutiveDashboard();
@@ -403,7 +538,7 @@ async function loadEvents() {
 
   let localData = localStorage.getItem('ubnd_calendar_events');
   if (!localData) {
-    events = FALLBACK_EVENTS;
+    events = getWeekFallbackEvents(monday);
     localStorage.setItem('ubnd_calendar_events', JSON.stringify(events));
   } else {
     events = JSON.parse(localData);
@@ -415,6 +550,10 @@ async function loadEvents() {
     const evtDate = evt.start_time.split(' ')[0];
     return evtDate >= startDayOnly && evtDate <= endDayOnly;
   });
+
+  if (!events || events.length === 0) {
+    events = getWeekFallbackEvents(monday);
+  }
 
   renderGrid();
   renderCitizenReception();
