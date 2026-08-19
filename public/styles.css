@@ -899,49 +899,52 @@ body {
   flex: 1;
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  gap: 20px;
-  overflow-y: hidden; /* Cố định không cuộn */
+  flex-wrap: nowrap; /* Xếp ngang không xuống dòng */
+  align-items: stretch; /* Dãn đều chiều cao các thẻ */
+  gap: 16px;
+  overflow: hidden; /* Tránh cuộn dọc/ngang */
+  width: 100%;
 }
 
-/* Thẻ sự kiện hôm nay màu sáng tươi, kích thước thu nhỏ khoa học */
+/* Thẻ sự kiện hôm nay xếp dọc, dãn đều ngang */
 .tv-event-card {
   background: #FFFFFF;
   border: 1px solid rgba(0, 0, 0, 0.05);
-  border-left: 8px solid var(--color-ubnd);
-  border-radius: 14px;
-  padding: 16px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.03);
-  transition: all 0.2s;
-  flex: 1;
-  min-width: 330px;
-  max-width: 100%;
-  height: max-content;
-}
-
-.tv-event-card.cat-dang_uy { border-left-color: var(--color-dang-uy); }
-.tv-event-card.cat-ubnd { border-left-color: var(--color-ubnd); }
-.tv-event-card.cat-tiep_dan { border-left-color: var(--color-tiep-dan); }
-.tv-event-card.cat-thuc_dia { border-left-color: var(--color-thuc-dia); }
-
-.tv-event-card-left {
-  flex: 3;
+  border-top: 8px solid var(--color-ubnd); /* Chuyển dải màu phân loại lên phía đầu thẻ */
+  border-left: none;
+  border-radius: 16px;
+  padding: 20px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  justify-content: space-between;
+  align-items: stretch;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
+  flex: 1 1 0px; /* Chia đều chiều rộng */
+  min-width: 0; /* Cho phép co nhỏ tối đa khi nhiều lịch */
+  max-width: 100%;
+  height: auto;
+}
+
+.tv-event-card.cat-dang_uy { border-top-color: var(--color-dang-uy); }
+.tv-event-card.cat-ubnd { border-top-color: var(--color-ubnd); }
+.tv-event-card.cat-tiep_dan { border-top-color: var(--color-tiep-dan); }
+.tv-event-card.cat-thuc_dia { border-top-color: var(--color-thuc-dia); }
+
+.tv-event-card-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
 }
 
 .tv-event-time-badge {
-  font-size: 1.02rem;
+  font-size: 1.05rem;
   font-weight: 800;
-  color: #1E3A8A; /* Màu xanh Navy đậm hài hòa */
+  color: #1E3A8A;
   background: rgba(2, 132, 199, 0.06);
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
   width: max-content;
   border: 1px solid rgba(2, 132, 199, 0.12);
   display: flex;
@@ -950,29 +953,38 @@ body {
 }
 
 .tv-event-title {
-  font-size: 1.35rem; /* Cỡ chữ khoa học tránh tràn dòng */
+  font-size: 1.25rem;
   font-weight: 800;
-  line-height: 1.35;
+  line-height: 1.4;
   color: #0F172A;
+  margin-bottom: 8px;
+  /* Giới hạn tối đa 3 dòng tiêu đề */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .tv-meta-row {
   display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: 2px;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
 }
 
 .tv-meta-item {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.95rem; /* Cỡ chữ nhỏ gọn hơn */
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.95rem;
   color: #475569;
+  line-height: 1.35;
 }
 
 .tv-meta-item i {
-  color: #0284C7; /* Icon màu xanh da trời vừa phải */
+  color: #0284C7;
+  margin-top: 3px;
+  width: 14px;
 }
 
 .tv-meta-item strong {
@@ -985,15 +997,17 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  margin-left: 15px;
+  margin-top: 15px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.06);
+  padding-top: 12px;
 }
 
 .tv-qr-box {
   background: white;
   padding: 6px;
   border-radius: 8px;
-  width: 76px; /* Thu nhỏ QR code box */
-  height: 76px;
+  width: 72px;
+  height: 72px;
   display: flex;
   align-items: center;
   justify-content: center;
