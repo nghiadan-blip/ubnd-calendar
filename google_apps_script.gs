@@ -21,17 +21,17 @@ const CALENDAR_ID = 'primary';
 
 // DANH BẠ EMAIL CÁN BỘ XÃ - Tự động ánh xạ khi gửi email thông báo
 const CAN_BO_DIRECTORY = {
-  'chủ tịch': 'chutich.vyan@gmail.com',
-  'phó chủ tịch': 'pct.le.vyan@gmail.com', // Sẽ gửi đến cả 2 hoặc email đại diện
-  'nguyễn văn a': 'chutich.vyan@gmail.com',
-  'lê văn b': 'pct.le.vyan@gmail.com',
-  'trần thị c': 'pct.tran.vyan@gmail.com',
-  'địa chính': 'diachinh.vyan@gmail.com',
-  'tư pháp': 'tuphap.vyan@gmail.com',
-  'văn phòng': 'vanphong.vyan@gmail.com',
-  'công an': 'congan.vyan@gmail.com',
-  'quân sự': 'quansu.vyan@gmail.com',
-  'đoàn thanh niên': 'doan.thanhnien.vyan@gmail.com'
+  'chủ tịch': 'chutich.nghialam@gmail.com',
+  'phó chủ tịch': 'pct.nghialam@gmail.com',
+  'nguyễn hùng cường': 'chutich.nghialam@gmail.com',
+  'lô xuân du': 'pct.loxuandu@gmail.com',
+  'nguyễn huy anh': 'pct.nguyenhuyanh@gmail.com',
+  'địa chính': 'diachinh.nghialam@gmail.com',
+  'tư pháp': 'tuphap.nghialam@gmail.com',
+  'văn phòng': 'vanphong.nghialam@gmail.com',
+  'công an': 'congan.nghialam@gmail.com',
+  'quân sự': 'quansu.nghialam@gmail.com',
+  'đoàn thanh niên': 'doan.thanhnien.nghialam@gmail.com'
 };
 
 /**

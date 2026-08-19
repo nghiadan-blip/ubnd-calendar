@@ -904,6 +904,14 @@ function resetEventForm() {
   document.getElementById('btn-delete-event').classList.add('hidden');
   document.getElementById('event-ai-raw-text').value = '';
   
+  // Dọn dẹp khung xem trước mã QR Code
+  const qrContainer = document.getElementById('admin-qr-preview-container');
+  if (qrContainer) {
+    qrContainer.style.display = 'none';
+    qrContainer.classList.add('hidden');
+    document.getElementById('admin-qr-preview-box').innerHTML = '';
+  }
+
   const details = document.querySelector('.ai-extractor-details');
   if (details) details.removeAttribute('open');
 
@@ -979,6 +987,16 @@ function openEditEventForm(evt = null) {
 
     document.getElementById('event-attendees').value = evt.attendees || '';
     document.getElementById('event-document').value = evt.document_link || '';
+    
+    // Tự động tạo ảnh QR Code xem trước nếu cuộc họp đã có sẵn tài liệu
+    if (evt.document_link) {
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(evt.document_link)}&color=0f172a`;
+      document.getElementById('admin-qr-preview-box').innerHTML = `<img src="${qrUrl}" style="width: 100%; height: 100%; display: block;" alt="QR Code">`;
+      document.getElementById('admin-qr-download').href = qrUrl;
+      const qrContainer = document.getElementById('admin-qr-preview-container');
+      qrContainer.style.display = 'flex';
+      qrContainer.classList.remove('hidden');
+    }
     
     document.getElementById('btn-delete-event').classList.remove('hidden');
   } else {
@@ -1542,35 +1560,37 @@ function renderTVGrid(todayEvents) {
     const endTimeStr = evt.end_time.split(' ')[1];
 
     const qrImageHtml = evt.document_link 
-      ? `<div class="tv-event-card-right">
+      ? `<div class="tv-event-card-qr">
            <div class="tv-qr-box">
-             <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(evt.document_link)}&color=0f172a" alt="QR Link">
+             <img src="https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=${encodeURIComponent(evt.document_link)}&color=0f172a" alt="QR Link">
            </div>
-           <span class="tv-qr-label">Quét Tài liệu</span>
+           <span class="tv-qr-label">Tài liệu họp</span>
          </div>`
-      : `<div class="tv-event-card-right" style="opacity: 0.1">
-           <i class="fa-solid fa-qrcode" style="font-size: 3rem; color: white;"></i>
+      : `<div class="tv-event-card-qr" style="opacity: 0.15">
+           <i class="fa-solid fa-qrcode" style="font-size: 2.5rem; color: #94a3b8;"></i>
          </div>`;
 
     card.innerHTML = `
-      <div class="tv-event-card-left">
+      <div class="tv-event-card-time">
         <div class="tv-event-time-badge">
           <i class="fa-regular fa-clock"></i> ${startTimeStr} - ${endTimeStr}
         </div>
+      </div>
+      <div class="tv-event-card-title">
         <div class="tv-event-title">${evt.title}</div>
-        <div class="tv-meta-row">
-          <div class="tv-meta-item">
-            <i class="fa-solid fa-user-tie"></i>
-            <span>Chủ trì: <strong>${evt.chairperson}</strong></span>
-          </div>
-          <div class="tv-meta-item">
-            <i class="fa-solid fa-location-dot"></i>
-            <span>Nơi họp: <strong>${evt.location}</strong></span>
-          </div>
-          <div class="tv-meta-item">
-            <i class="fa-solid fa-users"></i>
-            <span>Thành phần: <strong>${evt.attendees || 'Cán bộ xã'}</strong></span>
-          </div>
+      </div>
+      <div class="tv-event-card-meta">
+        <div class="tv-meta-item">
+          <i class="fa-solid fa-user-tie"></i>
+          <span>Chủ trì: <strong>${evt.chairperson}</strong></span>
+        </div>
+        <div class="tv-meta-item">
+          <i class="fa-solid fa-location-dot"></i>
+          <span>Nơi họp: <strong>${evt.location}</strong></span>
+        </div>
+        <div class="tv-meta-item">
+          <i class="fa-solid fa-users"></i>
+          <span>Thành phần: <strong>${evt.attendees || 'Cán bộ xã'}</strong></span>
         </div>
       </div>
       ${qrImageHtml}
@@ -1767,6 +1787,35 @@ function setupEventListeners() {
   
   // Lắng nghe sự kiện click nút Tối ưu tiêu đề AI
   document.getElementById('btn-ai-polish-title').addEventListener('click', handleAIPolishTitle);
+
+  // Lắng nghe sự kiện click nút Tạo mã QR thủ công trong Admin Panel
+  document.getElementById('btn-generate-qr-admin').addEventListener('click', () => {
+    const urlInput = document.getElementById('event-document').value.trim();
+    const qrContainer = document.getElementById('admin-qr-preview-container');
+    const qrBox = document.getElementById('admin-qr-preview-box');
+    const qrDownload = document.getElementById('admin-qr-download');
+
+    if (!urlInput) {
+      alert('Vui lòng nhập đường dẫn (URL) tài liệu trước khi tạo mã QR.');
+      return;
+    }
+
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(urlInput)}&color=0f172a`;
+    qrBox.innerHTML = `<img src="${qrUrl}" style="width: 100%; height: 100%; display: block;" alt="QR Code">`;
+    qrDownload.href = qrUrl;
+
+    qrContainer.style.display = 'flex';
+    qrContainer.classList.remove('hidden');
+  });
+
+  // Tự động ẩn khung xem trước QR Code nếu ô nhập bị xóa trống
+  document.getElementById('event-document').addEventListener('input', (e) => {
+    if (!e.target.value.trim()) {
+      const qrContainer = document.getElementById('admin-qr-preview-container');
+      qrContainer.style.display = 'none';
+      qrContainer.classList.add('hidden');
+    }
+  });
 
   // Kích hoạt Soạn biên bản AI
   document.getElementById('btn-ai-minutes-trigger').addEventListener('click', () => {

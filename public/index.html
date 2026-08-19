@@ -93,9 +93,9 @@
           <!-- Filter by Chairperson -->
           <select id="filter-chairperson" class="form-select">
             <option value="">-- Tất cả Chủ trì --</option>
-            <option value="Nguyễn Văn A">Chủ tịch Nguyễn Văn A</option>
-            <option value="Lê Văn B">Phó Chủ tịch Lê Văn B</option>
-            <option value="Trần Thị C">Phó Chủ tịch Trần Thị C</option>
+            <option value="Nguyễn Hùng Cường">Chủ tịch Nguyễn Hùng Cường</option>
+            <option value="Lô Xuân Du">Phó Chủ tịch Lô Xuân Du</option>
+            <option value="Nguyễn Huy Anh">Phó Chủ tịch Nguyễn Huy Anh</option>
           </select>
 
           <!-- Filter by Category -->
@@ -420,7 +420,25 @@
 
         <div class="form-group">
           <label for="event-document">Link tài liệu đính kèm (Google Drive, OneDrive,...)</label>
-          <input type="url" id="event-document" class="form-control" placeholder="https://...">
+          <div style="display: flex; gap: 10px;">
+            <input type="url" id="event-document" class="form-control" placeholder="https://..." style="flex: 1;">
+            <button type="button" id="btn-generate-qr-admin" class="btn btn-secondary" style="white-space: nowrap; font-size: 13px; font-weight: bold; background: #0F172A; color: white;">
+              <i class="fa-solid fa-qrcode"></i> Tạo mã QR
+            </button>
+          </div>
+          <!-- Khung hiển thị mã QR Code xem trước & tải về trong phần quản trị -->
+          <div id="admin-qr-preview-container" class="hidden" style="margin-top: 10px; display: none; align-items: center; gap: 15px; background: #F8FAFC; border: 1px dashed #CBD5E1; padding: 12px; border-radius: 10px;">
+            <div id="admin-qr-preview-box" style="width: 80px; height: 80px; background: white; display: flex; align-items: center; justify-content: center; border: 1px solid #E2E8F0; padding: 4px; border-radius: 8px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+              <!-- Ảnh QR Code sẽ tự động tạo ở đây -->
+            </div>
+            <div>
+              <p style="margin: 0; font-size: 13px; font-weight: bold; color: #0F172A;">Mã QR tài liệu họp đã được tạo!</p>
+              <p style="margin: 3px 0 0 0; font-size: 11px; color: #64748B; line-height: 1.3;">Mã QR này sẽ hiển thị trực quan trên màn hình Tivi sảnh và trong thông báo gửi cán bộ.</p>
+              <a id="admin-qr-download" href="#" target="_blank" download="qr_tailieu_hop.png" style="display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 11px; font-weight: 700; color: #0EA5E9; text-decoration: none;">
+                <i class="fa-solid fa-download"></i> Tải file ảnh QR Code về máy
+              </a>
+            </div>
+          </div>
         </div>
 
         <!-- Room Conflict Override Checkbox -->
