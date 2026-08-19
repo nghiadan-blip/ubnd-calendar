@@ -37,6 +37,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (appContainer) appContainer.classList.remove('hidden');
   }
 
+  // Tự động kích hoạt quyền quản trị nếu có tham số mật khẩu ?pass=NghiaLam@2026
+  const passParam = urlParams.get('pass');
+  if (passParam === 'NghiaLam@2026') {
+    isAdminMode = true;
+    sessionStorage.setItem('admin_password', passParam);
+  }
+
   await loadSettings();
   initClock();
   setupEventListeners();
