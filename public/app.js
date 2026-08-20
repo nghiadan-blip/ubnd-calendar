@@ -205,6 +205,61 @@ async function loadSettings() {
   updateAppsScriptButtonState();
 }
 
+async function saveSettings() {
+  const syncMode = document.querySelector('input[name="setting-sync-mode"]:checked')?.value || 'server-sqlite';
+  const gcalId = document.getElementById('setting-gcal-id').value.trim();
+  const appsScriptUrl = document.getElementById('setting-apps-script-url').value.trim();
+  const webhookSecretInput = document.getElementById('setting-webhook-secret').value.trim();
+  const tvFocus = document.getElementById('setting-tv-focus').value.trim();
+  const aiProvider = document.getElementById('setting-ai-provider').value;
+  const aiModel = document.getElementById('setting-ai-model').value.trim();
+  const aiKeyInput = document.getElementById('setting-ai-key').value.trim();
+
+  settings.syncMode = syncMode;
+  settings.gcalId = gcalId;
+  settings.appsScriptUrl = appsScriptUrl;
+  settings.tvFocus = tvFocus;
+  settings.aiProvider = aiProvider;
+  settings.aiModel = aiModel;
+
+  if (aiKeyInput && aiKeyInput !== '********') {
+    settings.aiKey = aiKeyInput;
+  }
+  if (webhookSecretInput && webhookSecretInput !== '********') {
+    settings.webhookSecret = webhookSecretInput;
+  }
+
+  // 1. Lưu vào LocalStorage
+  localStorage.setItem('ubnd_calendar_settings', JSON.stringify(settings));
+
+  // 2. Gửi lưu lên Server Express
+  try {
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (sessionStorage.getItem('admin_password') || 'NghiaLam@2026')
+      },
+      body: JSON.stringify({
+        gcalId,
+        appsScriptUrl,
+        webhookSecret: settings.webhookSecret,
+        tvFocus,
+        aiProvider,
+        aiModel,
+        aiKey: settings.aiKey
+      })
+    });
+  } catch (err) {
+    console.warn('Lỗi lưu server settings:', err);
+  }
+
+  closeModal('modal-settings');
+  alert('Đã lưu cấu hình hệ thống & API Deepseek thành công!');
+  checkBackendConnection();
+  loadEvents();
+}
+
 function updateAppsScriptButtonState() {
   const btnTestGas = document.getElementById('btn-test-gas');
   if (btnTestGas) {
@@ -2205,6 +2260,9 @@ function setupEventListeners() {
 
   const btnSettingsToolbar = document.getElementById('btn-open-settings-toolbar');
   if (btnSettingsToolbar) btnSettingsToolbar.addEventListener('click', () => openModal('modal-settings'));
+
+  const btnSaveSettings = document.getElementById('btn-save-settings');
+  if (btnSaveSettings) btnSaveSettings.addEventListener('click', saveSettings);
 
   const closes = document.querySelectorAll('[data-close]');
   closes.forEach(c => {
