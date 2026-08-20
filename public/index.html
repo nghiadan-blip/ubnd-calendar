@@ -11,7 +11,7 @@
   <!-- FontAwesome for Premium Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=4.0.0">
+  <link rel="stylesheet" href="styles.css?v=4.2.0">
   <style>
     /* CRITICAL OVERRIDES FOR ADMIN MODALS & ADMIN BUTTONS */
     #tv-mode-container.hidden { display: none !important; visibility: hidden !important; pointer-events: none !important; }
@@ -79,8 +79,9 @@
         </a>
         
         <!-- Settings Button -->
-        <button id="btn-settings" class="btn btn-icon-only" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); color: white;" title="Cấu hình hệ thống">
-          <i class="fa-solid fa-sliders"></i>
+        <button id="btn-settings" class="pill-btn admin-only" title="Cấu hình hệ thống & nhập API Key Deepseek">
+          <i class="fa-solid fa-sliders" style="color: #38BDF8;"></i>
+          <span>⚙ Cấu hình & API Deepseek</span>
         </button>
       </div>
     </header>
@@ -226,11 +227,14 @@
         <span id="connection-badge" class="badge badge-offline">
           <i class="fa-solid fa-circle"></i> <span id="connection-status-text">Đang chạy Offline (LocalStorage)</span>
         </span>
-        <div class="admin-buttons-group admin-only hidden" style="display: flex; gap: 8px;">
+        <div class="admin-buttons-group admin-only" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
           <!-- Input file ẩn để upload -->
           <input type="file" id="input-upload-file" class="hidden" accept=".json,.csv" style="display: none;">
           <button id="btn-upload-calendar" class="btn btn-secondary btn-sm" title="Nhập danh sách lịch họp từ file Excel/CSV hoặc JSON">
             <i class="fa-solid fa-file-import"></i> Nhập từ file (.json/.csv)
+          </button>
+          <button id="btn-open-settings-toolbar" class="btn btn-outline btn-sm admin-only" style="border-color: #0EA5E9; color: #0284C7; font-weight: 700;" title="Cấu hình hệ thống & nhập API Key Deepseek">
+            <i class="fa-solid fa-sliders" style="color: #0EA5E9;"></i> Cấu hình & API Deepseek
           </button>
           <button id="btn-add-event" class="btn btn-success btn-sm">
             <i class="fa-solid fa-plus"></i> Thêm lịch mới
@@ -840,8 +844,8 @@
   </div>
 
   <!-- Application Logic Scripts -->
-  <script src="data.js?v=4.0.0"></script>
-  <script src="app.js?v=4.0.0"></script>
+  <script src="data.js?v=4.2.0"></script>
+  <script src="app.js?v=4.2.0"></script>
   <script>
     (function() {
       function runAdminDirect() {
@@ -902,9 +906,22 @@
           };
         }
 
+        // Gán sự kiện mở modal Cấu hình & API Deepseek
+        const openSettingsModal = function() {
+          const modal = document.getElementById('modal-settings');
+          if (modal) modal.classList.add('active');
+          if (typeof loadSettings === 'function') loadSettings();
+        };
+
+        const btnSettingsHeader = document.getElementById('btn-settings');
+        if (btnSettingsHeader) btnSettingsHeader.onclick = openSettingsModal;
+
+        const btnSettingsToolbar = document.getElementById('btn-open-settings-toolbar');
+        if (btnSettingsToolbar) btnSettingsToolbar.onclick = openSettingsModal;
+
         // Gán sự kiện trực tiếp cho nút Nhập từ file
-        const btnImport = document.getElementById('btn-import-file');
-        const fileInput = document.getElementById('file-import-input');
+        const btnImport = document.getElementById('btn-import-file') || document.getElementById('btn-upload-calendar');
+        const fileInput = document.getElementById('file-import-input') || document.getElementById('input-upload-file');
         if (btnImport && fileInput) {
           btnImport.onclick = function() {
             fileInput.click();

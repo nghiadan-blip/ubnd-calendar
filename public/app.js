@@ -2200,7 +2200,11 @@ function setupEventListeners() {
     }
   });
 
-  document.getElementById('btn-settings').addEventListener('click', () => openModal('modal-settings'));
+  const btnSettings = document.getElementById('btn-settings');
+  if (btnSettings) btnSettings.addEventListener('click', () => openModal('modal-settings'));
+
+  const btnSettingsToolbar = document.getElementById('btn-open-settings-toolbar');
+  if (btnSettingsToolbar) btnSettingsToolbar.addEventListener('click', () => openModal('modal-settings'));
 
   const closes = document.querySelectorAll('[data-close]');
   closes.forEach(c => {
