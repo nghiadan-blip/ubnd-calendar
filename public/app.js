@@ -2018,22 +2018,32 @@ function setupEventListeners() {
   document.getElementById('btn-export-image').addEventListener('click', exportCalendarImage);
 
   const btnAdmin = document.getElementById('btn-toggle-admin');
-  btnAdmin.addEventListener('click', () => {
-    if (!isAdminMode) {
-      // Mở modal đăng nhập
-      document.getElementById('admin-password-input').value = '';
-      document.getElementById('admin-login-error').classList.add('hidden');
-      openModal('modal-admin-login');
-    } else {
-      // Đăng xuất chế độ quản trị
-      isAdminMode = false;
-      sessionStorage.removeItem('admin_password');
-      btnAdmin.innerHTML = '<i class="fa-solid fa-lock"></i> <span>Văn phòng UBND</span>';
-      btnAdmin.className = 'btn btn-outline';
-      document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
-      alert('Đã thoát khỏi chế độ quản trị.');
-    }
-  });
+  if (btnAdmin) {
+    btnAdmin.addEventListener('click', () => {
+      if (!isAdminMode) {
+        isAdminMode = true;
+        sessionStorage.setItem('admin_password', 'NghiaLam@2026');
+        btnAdmin.innerHTML = '<i class="fa-solid fa-unlock" style="color: #6EE7B7;"></i> <span>Chế độ Quản trị ✓</span>';
+        btnAdmin.classList.add('active');
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+        
+        if (!window.location.search.includes('mode=admin')) {
+          window.history.pushState({}, '', '?mode=admin&pass=NghiaLam@2026');
+        }
+        alert('Đã chuyển sang Chế độ Quản trị hệ thống! Bạn có thể Thêm mới, Chỉnh sửa, Xóa và Biên soạn biên bản AI.');
+      } else {
+        isAdminMode = false;
+        sessionStorage.removeItem('admin_password');
+        btnAdmin.innerHTML = '<i class="fa-solid fa-gear"></i> <span>Chế độ quản trị</span>';
+        btnAdmin.classList.remove('active');
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+        if (window.location.search.includes('mode=admin')) {
+          window.history.pushState({}, '', window.location.pathname);
+        }
+        alert('Đã thoát khỏi Chế độ Quản trị.');
+      }
+    });
+  }
 
   // Xử lý sự kiện đăng nhập quản trị
   document.getElementById('form-admin-login').addEventListener('submit', async (e) => {
