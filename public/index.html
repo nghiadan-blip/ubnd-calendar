@@ -885,9 +885,29 @@
                 el.style.display = 'none';
               });
               btnAdmin.innerHTML = '<i class="fa-solid fa-gear"></i> <span>Chế độ quản trị</span>';
-              btnAdmin.classList.remove('active');
               alert('Đã thoát Chế độ Quản trị.');
             }
+          };
+        }
+        // Gán sự kiện trực tiếp cho nút Thêm mới lịch họp
+        const btnAdd = document.getElementById('btn-add-event');
+        if (btnAdd) {
+          btnAdd.onclick = function() {
+            if (typeof openEditEventForm === 'function') {
+              openEditEventForm(null);
+            } else {
+              const modal = document.getElementById('modal-event');
+              if (modal) modal.classList.add('active');
+            }
+          };
+        }
+
+        // Gán sự kiện trực tiếp cho nút Nhập từ file
+        const btnImport = document.getElementById('btn-import-file');
+        const fileInput = document.getElementById('file-import-input');
+        if (btnImport && fileInput) {
+          btnImport.onclick = function() {
+            fileInput.click();
           };
         }
       }

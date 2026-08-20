@@ -1184,6 +1184,12 @@ function openEditEventForm(evt = null) {
     document.getElementById('btn-delete-event').classList.remove('hidden');
   } else {
     document.getElementById('modal-event-title').textContent = 'Thêm lịch làm việc mới';
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    document.getElementById('event-start').value = `${yyyy}-${mm}-${dd}T08:00`;
+    document.getElementById('event-end').value = `${yyyy}-${mm}-${dd}T10:30`;
   }
 
   closeModal('modal-details');
@@ -2248,6 +2254,7 @@ function setupEventListeners() {
     const success = await saveEventData(eventData, override);
     if (success) {
       closeModal('modal-event');
+      alert('Đã lưu lịch làm việc thành công!');
       loadEvents();
     }
   });
@@ -2258,6 +2265,7 @@ function setupEventListeners() {
       const success = await deleteEventData(parseInt(id));
       if (success) {
         closeModal('modal-event');
+        alert('Đã xóa lịch làm việc thành công!');
         loadEvents();
       }
     }
