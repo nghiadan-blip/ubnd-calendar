@@ -28,20 +28,26 @@ let originalPreparingHtml = "";
 
 // Khởi chạy ứng dụng
 document.addEventListener('DOMContentLoaded', async () => {
-  // Cưỡng bức chuyển sang trang quản lý chính nếu có tham số ?mode=admin
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('mode') === 'admin') {
+  const modeParam = urlParams.get('mode');
+  const passParam = urlParams.get('pass');
+  const savedPassword = sessionStorage.getItem('admin_password');
+
+  // Kích hoạt chế độ quản trị 100% nếu có mode=admin, pass=NghiaLam@2026 hoặc đã lưu phiên
+  if (modeParam === 'admin' || passParam === 'NghiaLam@2026' || savedPassword) {
+    isAdminMode = true;
+    sessionStorage.setItem('admin_password', passParam || savedPassword || 'NghiaLam@2026');
+    
     const tvContainer = document.getElementById('tv-mode-container');
     const appContainer = document.getElementById('app-container');
     if (tvContainer) tvContainer.classList.add('hidden');
     if (appContainer) appContainer.classList.remove('hidden');
-  }
 
-  // Tự động kích hoạt quyền quản trị nếu có tham số mật khẩu ?pass=NghiaLam@2026
-  const passParam = urlParams.get('pass');
-  if (passParam === 'NghiaLam@2026') {
-    isAdminMode = true;
-    sessionStorage.setItem('admin_password', passParam);
+    const btnAdmin = document.getElementById('btn-toggle-admin');
+    if (btnAdmin) {
+      btnAdmin.innerHTML = '<i class="fa-solid fa-unlock text-emerald"></i> <span>Chế độ Quản trị</span>';
+      btnAdmin.className = 'btn btn-outline border-emerald';
+    }
   }
 
   await loadSettings();
@@ -60,16 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadEvents();
   checkBackendConnection();
 
-  // Khôi phục chế độ quản trị nếu có mật khẩu lưu trong phiên làm việc
-  const savedPassword = sessionStorage.getItem('admin_password');
-  if (savedPassword) {
-    isAdminMode = true;
-    const btnAdmin = document.getElementById('btn-toggle-admin');
-    if (btnAdmin) {
-      btnAdmin.innerHTML = '<i class="fa-solid fa-unlock text-emerald"></i> <span>Chế độ Quản trị</span>';
-      btnAdmin.className = 'btn btn-outline border-emerald';
-    }
-    // Hiển thị các chức năng quản trị sau khi DOM hoàn thành
+  if (isAdminMode) {
     setTimeout(() => {
       document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
     }, 100);
