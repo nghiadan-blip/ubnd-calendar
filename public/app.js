@@ -1406,16 +1406,6 @@ async function handleAIExtract() {
 }
 
 async function callAICompletionsAPI(rawText) {
-  let endpoint = 'https://api.deepseek.com/chat/completions';
-  let modelName = settings.aiModel || 'deepseek-chat';
-
-  if (settings.aiProvider === 'openai') {
-    endpoint = 'https://api.openai.com/v1/chat/completions';
-    if (!settings.aiModel || settings.aiModel === 'deepseek-chat') {
-      modelName = 'gpt-4o';
-    }
-  }
-
   const systemPrompt = `Bạn là Trợ lý số hóa văn phòng hành chính cho UBND xã tại Việt Nam.
 Nhiệm vụ của bạn là đọc kỹ đoạn văn bản thô dán vào (giấy mời họp, công văn chỉ đạo, thông báo) và bóc tách thông tin chính xác, điền vào một cấu trúc JSON.
 Hãy trả về JSON sạch, KHÔNG có khối markdown vây quanh (không viết \`\`\`json ... \`\`\`), chỉ trả về chuỗi JSON duy nhất.
@@ -1433,6 +1423,39 @@ Cấu trúc JSON yêu cầu bóc tách:
   "document_link": "Tìm các URL liên kết tài liệu đính kèm nếu có nhắc đến trong văn bản, nếu không để chuỗi rỗng",
   "status": "Mặc định để 'scheduled'"
 }`;
+
+  try {
+    const res = await fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: rawText }
+        ],
+        provider: settings.aiProvider,
+        model: settings.aiModel,
+        apiKey: settings.aiKey
+      })
+    });
+    if (res.ok) {
+      const result = await res.json();
+      let content = result.choices[0].message.content.trim();
+      if (content.startsWith('```')) {
+        content = content.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
+      }
+      return JSON.parse(content);
+    }
+  } catch (err) {
+    console.warn('Proxy AI Server fallback sang direct API client...', err);
+  }
+
+  let endpoint = 'https://api.deepseek.com/chat/completions';
+  let modelName = settings.aiModel || 'deepseek-chat';
+  if (settings.aiProvider === 'openai') {
+    endpoint = 'https://api.openai.com/v1/chat/completions';
+    if (!settings.aiModel || settings.aiModel === 'deepseek-chat') modelName = 'gpt-4o';
+  }
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -1456,18 +1479,11 @@ Cấu trúc JSON yêu cầu bóc tách:
   }
 
   const result = await response.json();
-  const content = result.choices[0].message.content.trim();
-  
-  let jsonStr = content;
-  if (jsonStr.startsWith('```')) {
-    jsonStr = jsonStr.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
+  let content = result.choices[0].message.content.trim();
+  if (content.startsWith('```')) {
+    content = content.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
   }
-
-  try {
-    return JSON.parse(jsonStr);
-  } catch (e) {
-    throw new Error('AI phản hồi định dạng không hợp lệ, hãy kiểm tra nội dung.');
-  }
+  return JSON.parse(content);
 }
 
 // AI hiệu chỉnh tiêu đề hành chính
@@ -1478,12 +1494,6 @@ async function handleAIPolishTitle() {
 
   if (!rawTitle) {
     alert('Vui lòng nhập nội dung công việc ngắn gọn trước khi tối ưu văn phong.');
-    return;
-  }
-
-  if (!settings.aiKey) {
-    alert('Vui lòng cấu hình API Key trong Settings trước.');
-    openModal('modal-settings');
     return;
   }
 
@@ -1505,20 +1515,39 @@ async function handleAIPolishTitle() {
 }
 
 async function callAIPolishTitleAPI(rawTitle) {
-  let endpoint = 'https://api.deepseek.com/chat/completions';
-  let modelName = settings.aiModel || 'deepseek-chat';
-
-  if (settings.aiProvider === 'openai') {
-    endpoint = 'https://api.openai.com/v1/chat/completions';
-    if (!settings.aiModel || settings.aiModel === 'deepseek-chat') {
-      modelName = 'gpt-4o';
-    }
-  }
-
   const systemPrompt = `Bạn là chuyên gia biên soạn văn phong hành chính cho chính phủ Việt Nam.
 Nhiệm vụ của bạn là nhận vào một tiêu đề cuộc họp/công việc hành chính viết tắt hoặc viết vắn tắt bằng tiếng Việt, và viết lại nó thành một câu tiêu đề trang trọng, đúng văn phong hành chính nhà nước cấp xã/phường.
 Chỉ trả về tiêu đề đã hiệu chỉnh, KHÔNG giải thích thêm, không để trong ngoặc kép.
 Ví dụ: "họp thôn 3 sửa đường" -> "Tổ chức Hội nghị kiểm tra thực địa và bàn phương án thi công nâng cấp đường giao thông nông thôn tại Thôn 3"`;
+
+  try {
+    const res = await fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: rawTitle }
+        ],
+        provider: settings.aiProvider,
+        model: settings.aiModel,
+        apiKey: settings.aiKey
+      })
+    });
+    if (res.ok) {
+      const result = await res.json();
+      return result.choices[0].message.content.trim();
+    }
+  } catch (err) {
+    console.warn('Proxy AI Server fallback...', err);
+  }
+
+  let endpoint = 'https://api.deepseek.com/chat/completions';
+  let modelName = settings.aiModel || 'deepseek-chat';
+  if (settings.aiProvider === 'openai') {
+    endpoint = 'https://api.openai.com/v1/chat/completions';
+    if (!settings.aiModel || settings.aiModel === 'deepseek-chat') modelName = 'gpt-4o';
+  }
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -1554,12 +1583,6 @@ async function handleAIGenerateMinutes() {
     return;
   }
 
-  if (!settings.aiKey) {
-    alert('Vui lòng cấu hình API Key trong Settings trước.');
-    openModal('modal-settings');
-    return;
-  }
-
   const originalBtnHtml = btn.innerHTML;
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> AI đang biên soạn kết luận cuộc họp...';
   btn.disabled = true;
@@ -1579,16 +1602,6 @@ async function handleAIGenerateMinutes() {
 }
 
 async function callAIGenerateMinutesAPI(evt, rawNotes) {
-  let endpoint = 'https://api.deepseek.com/chat/completions';
-  let modelName = settings.aiModel || 'deepseek-chat';
-
-  if (settings.aiProvider === 'openai') {
-    endpoint = 'https://api.openai.com/v1/chat/completions';
-    if (!settings.aiModel || settings.aiModel === 'deepseek-chat') {
-      modelName = 'gpt-4o';
-    }
-  }
-
   const systemPrompt = `Bạn là Trợ lý soạn văn bản hành chính cho văn phòng UBND xã Nghĩa Lâm, tỉnh Nghệ An.
 Nhiệm vụ của bạn là nhận thông tin cơ bản của một cuộc họp và các ghi chép thảo luận thô, sau đó biên soạn thành một văn bản "THÔNG BÁO KẾT LUẬN CUỘC HỌP" trang trọng, chuyên nghiệp và đúng định dạng quy chuẩn văn bản hành chính Việt Nam.
 
@@ -1613,6 +1626,35 @@ Chỉ trả về văn bản thông báo kết luận cuộc họp đã hoàn thi
 
 GHI CHÉP DIỄN BIẾN THẢO LUẬN THÔ:
 ${rawNotes}`;
+
+  try {
+    const res = await fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        provider: settings.aiProvider,
+        model: settings.aiModel,
+        apiKey: settings.aiKey
+      })
+    });
+    if (res.ok) {
+      const result = await res.json();
+      return result.choices[0].message.content.trim();
+    }
+  } catch (err) {
+    console.warn('Proxy AI Server fallback...', err);
+  }
+
+  let endpoint = 'https://api.deepseek.com/chat/completions';
+  let modelName = settings.aiModel || 'deepseek-chat';
+  if (settings.aiProvider === 'openai') {
+    endpoint = 'https://api.openai.com/v1/chat/completions';
+    if (!settings.aiModel || settings.aiModel === 'deepseek-chat') modelName = 'gpt-4o';
+  }
 
   const response = await fetch(endpoint, {
     method: 'POST',
