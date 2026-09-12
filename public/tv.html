@@ -12,7 +12,13 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* 1. Reset Box-Sizing toàn cục */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body, html {
       width: 100%;
       height: 100%;
@@ -35,7 +41,8 @@
 
     /* Header Xanh Nước Biển Sang Trọng */
     .tv-header {
-      height: 10vh;
+      height: auto;
+      flex-shrink: 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -106,12 +113,13 @@
       text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
 
-    /* Body Layout 16:9 */
+    /* Body Layout 16:9 - Linh hoạt độ cao */
     .tv-body-lr {
-      height: 78vh;
+      flex: 1;
+      min-height: 0;
       display: flex;
-      gap: 28px;
-      margin: 18px 0;
+      gap: 24px;
+      margin: 16px 0;
       overflow: hidden;
     }
 
@@ -119,6 +127,7 @@
       flex: 7;
       display: flex;
       flex-direction: column;
+      min-height: 0;
       overflow: hidden;
     }
 
@@ -126,16 +135,18 @@
       flex: 3;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 16px;
+      min-height: 0;
       overflow: hidden;
     }
 
     /* Tiêu đề mục to rõ rực rỡ */
     .tv-section-title {
-      font-size: clamp(20px, 1.8vw, 30px);
+      flex-shrink: 0;
+      font-size: clamp(18px, 1.6vw, 26px);
       font-weight: 900;
-      color: #0369A1; /* Màu xanh nước biển đậm */
-      margin-bottom: 16px;
+      color: #0369A1;
+      margin-bottom: 12px;
       text-transform: uppercase;
       border-left: 8px solid #0284C7;
       padding-left: 14px;
@@ -156,10 +167,11 @@
     }
 
     .tv-section-title-small {
+      flex-shrink: 0;
       font-size: clamp(16px, 1.3vw, 22px);
       font-weight: 900;
       color: #0369A1;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       text-transform: uppercase;
       border-left: 5px solid #0284C7;
       padding-left: 10px;
@@ -168,6 +180,7 @@
     /* Timeline Danh sách hôm nay */
     .tv-today-timeline {
       flex: 1;
+      min-height: 0;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -178,11 +191,11 @@
     .tv-timeline-item {
       display: flex;
       align-items: center;
-      padding: 16px 22px;
+      padding: 14px 20px;
       background: #FFFFFF;
-      border-radius: 18px;
+      border-radius: 16px;
       border: 1px solid #E0F2FE;
-      box-shadow: 0 4px 14px -2px rgba(2, 132, 199, 0.08);
+      box-shadow: 0 4px 12px -2px rgba(2, 132, 199, 0.08);
       min-height: 80px;
       flex-shrink: 0;
       position: relative;
@@ -196,7 +209,7 @@
       background: #F8FAFC;
     }
 
-    /* Sự kiện ĐANG DIỄN RA - Xanh nước biển viền sáng nhấp nháy */
+    /* Sự kiện ĐANG DIỄN RA - Xanh nước biển viền sáng */
     .tv-timeline-item.ongoing {
       background: #F0F9FF;
       border: 2px solid #0284C7;
@@ -209,14 +222,14 @@
       left: 0; top: 0; bottom: 0;
       width: 8px;
       background: #0284C7;
-      border-top-left-radius: 18px;
-      border-bottom-left-radius: 18px;
+      border-top-left-radius: 16px;
+      border-bottom-left-radius: 16px;
     }
 
     /* Giờ họp Font Size Clamp */
     .tv-item-time {
-      flex: 0 0 115px;
-      font-size: clamp(22px, 2.4vw, 44px);
+      flex: 0 0 100px;
+      font-size: clamp(22px, 2.2vw, 40px);
       font-weight: 900;
       color: #0284C7;
       line-height: 1;
@@ -228,16 +241,16 @@
 
     .tv-item-body {
       flex: 1;
-      padding-left: 18px;
+      padding-left: 16px;
       min-width: 0;
     }
 
     /* Tiêu đề cuộc họp GIỚI HẠN TỐI ĐA 2 DÒNG */
     .tv-item-title {
-      font-size: clamp(16px, 1.6vw, 30px);
+      font-size: clamp(16px, 1.5vw, 26px);
       font-weight: 800;
       color: #0F172A;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       line-height: 1.3;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -254,11 +267,11 @@
     }
 
     .tv-item-desc {
-      font-size: clamp(13px, 1.1vw, 17px);
+      font-size: clamp(13px, 1.05vw, 16px);
       color: #475569;
       display: flex;
       flex-wrap: wrap;
-      gap: 14px;
+      gap: 12px;
       line-height: 1.3;
     }
 
@@ -272,7 +285,7 @@
 
     .tv-item-meta i {
       color: #0284C7;
-      font-size: 1rem;
+      font-size: 0.95rem;
     }
 
     .tv-item-meta strong {
@@ -281,11 +294,11 @@
     }
 
     .tv-item-status {
-      flex: 0 0 170px;
+      flex: 0 0 160px;
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 12px;
+      gap: 10px;
     }
 
     /* Nhãn trạng thái */
@@ -293,7 +306,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: clamp(13px, 0.9vw, 16px);
+      font-size: clamp(12px, 0.9vw, 15px);
       font-weight: 800;
       padding: 6px 12px;
       border-radius: 8px;
@@ -326,11 +339,11 @@
 
     /* Khung mã QR Code */
     .tv-item-qr-small {
-      width: 52px;
-      height: 52px;
+      width: 48px;
+      height: 48px;
       background: white;
       border: 2px solid #BAE6FD;
-      padding: 4px;
+      padding: 3px;
       border-radius: 10px;
       box-shadow: 0 4px 8px rgba(2, 132, 199, 0.1);
       flex-shrink: 0;
@@ -345,45 +358,45 @@
     .tv-next-hero-card {
       background: linear-gradient(135deg, #0284C7 0%, #0369A1 60%, #1E3A8A 100%);
       color: #FFFFFF;
-      border-radius: 22px;
-      padding: 24px;
-      box-shadow: 0 12px 30px -4px rgba(2, 132, 199, 0.3);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 10px 26px -4px rgba(2, 132, 199, 0.3);
       display: flex;
       flex-direction: column;
       align-items: stretch;
       justify-content: center;
-      flex: 1.2;
-      min-height: 240px;
+      flex: 1.1;
+      min-height: 200px;
       position: relative;
       overflow: hidden;
     }
 
     .tv-hero-label {
-      font-size: clamp(14px, 1.1vw, 18px);
+      font-size: clamp(13px, 1vw, 16px);
       font-weight: 900;
       color: #BAE6FD;
       text-align: center;
       text-transform: uppercase;
       letter-spacing: 2px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .tv-hero-time {
-      font-size: clamp(40px, 3.5vw, 56px);
+      font-size: clamp(36px, 3.2vw, 50px);
       font-weight: 900;
       color: #FFFFFF;
       text-align: center;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
       text-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
 
     .tv-hero-title {
-      font-size: clamp(18px, 1.5vw, 24px);
+      font-size: clamp(16px, 1.4vw, 22px);
       font-weight: 800;
       color: #FFFFFF;
       text-align: center;
       line-height: 1.3;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -396,13 +409,13 @@
     .tv-hero-meta {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
     .tv-hero-meta-item {
-      font-size: clamp(14px, 1.1vw, 17px);
+      font-size: clamp(13px, 1vw, 16px);
       color: #E0F2FE;
       display: flex;
       align-items: center;
@@ -415,12 +428,12 @@
     }
 
     .tv-hero-countdown {
-      font-size: clamp(16px, 1.2vw, 20px);
+      font-size: clamp(14px, 1.1vw, 18px);
       font-weight: 900;
       text-align: center;
       text-transform: uppercase;
-      padding: 8px 16px;
-      border-radius: 12px;
+      padding: 6px 14px;
+      border-radius: 10px;
       margin-top: auto;
       background: rgba(255, 255, 255, 0.15);
       backdrop-filter: blur(8px);
@@ -437,63 +450,70 @@
 
     /* Khối Ngày Mai */
     .tv-tomorrow-section {
-      flex: 0.8;
+      flex: 0.9;
       display: flex;
       flex-direction: column;
+      min-height: 0;
       overflow: hidden;
     }
 
     .tv-tomorrow-list {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       flex: 1;
+      min-height: 0;
       overflow: hidden;
     }
 
     .tv-tomorrow-item {
       display: flex;
       align-items: flex-start;
-      padding: 12px 16px;
+      padding: 10px 14px;
       background: #FFFFFF;
-      border-radius: 16px;
+      border-radius: 14px;
       border: 1px solid #E0F2FE;
       box-shadow: 0 4px 12px rgba(2, 132, 199, 0.05);
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
 
     .tv-tomorrow-time {
-      flex: 0 0 65px;
-      font-size: clamp(16px, 1.2vw, 20px);
+      flex: 0 0 60px;
+      font-size: clamp(15px, 1.1vw, 19px);
       font-weight: 900;
       color: #0284C7;
       padding-top: 2px;
     }
 
     .tv-tomorrow-title {
-      font-size: clamp(14px, 1vw, 17px);
+      font-size: clamp(13px, 0.95vw, 16px);
       font-weight: 800;
       color: #0F172A;
-      line-height: 1.35;
+      line-height: 1.3;
       overflow-wrap: anywhere;
       word-break: break-word;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
-    /* Footer Chân Trang Xanh Nước Biển */
+    /* Footer Chân Trang */
     .tv-footer {
-      height: 6vh;
+      height: auto;
+      flex-shrink: 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
       background: #FFFFFF;
       border: 1px solid #E0F2FE;
       border-radius: 14px;
-      padding: 0 24px;
+      padding: 10px 24px;
       box-shadow: 0 4px 12px rgba(2, 132, 199, 0.05);
     }
 
     .tv-footer-left {
-      font-size: clamp(14px, 1.1vw, 18px);
+      font-size: clamp(13px, 1vw, 17px);
       color: #1E293B;
       font-weight: 700;
       display: flex;
@@ -513,7 +533,7 @@
     }
 
     .tv-footer-right {
-      font-size: clamp(14px, 1vw, 17px);
+      font-size: clamp(13px, 0.95vw, 16px);
       font-weight: 800;
       color: #0284C7;
       flex-shrink: 0;
@@ -524,10 +544,10 @@
     }
 
     .btn-tv-fullscreen {
-      position: fixed; top: 24px; right: 24px;
+      position: fixed; top: 20px; right: 20px;
       background: rgba(2, 132, 199, 0.85); color: white; border: none;
-      width: 52px; height: 52px; border-radius: 50%; display: flex;
-      align-items: center; justify-content: center; font-size: 22px;
+      width: 48px; height: 48px; border-radius: 50%; display: flex;
+      align-items: center; justify-content: center; font-size: 20px;
       cursor: pointer; z-index: 10000; opacity: 0.4; transition: opacity 0.3s;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
@@ -537,7 +557,7 @@
        RESPONSIVE BREAKPOINTS (MOBILE PORTRAIT <= 768px & TABLET 769-1024px)
        ========================================================================== */
     @media (max-width: 768px) {
-      body, html {
+      html, body {
         overflow-y: auto !important;
         height: auto !important;
       }
@@ -546,23 +566,23 @@
         height: auto !important;
         min-height: 100vh;
         overflow-y: auto !important;
-        padding: 12px 14px !important;
+        padding: 12px !important;
       }
 
       .tv-header {
         height: auto !important;
         flex-direction: column !important;
         align-items: flex-start !important;
-        gap: 12px !important;
-        padding: 14px 18px !important;
+        gap: 10px !important;
+        padding: 12px 16px !important;
       }
 
       .tv-brand h2 {
-        font-size: clamp(18px, 5vw, 24px) !important;
+        font-size: clamp(18px, 4.8vw, 22px) !important;
       }
 
       .tv-subbrand {
-        font-size: 13px !important;
+        font-size: 12px !important;
       }
 
       .tv-clock-area {
@@ -571,18 +591,19 @@
       }
 
       #tv-time {
-        font-size: clamp(36px, 9vw, 48px) !important;
+        font-size: clamp(32px, 8vw, 44px) !important;
       }
 
       #tv-date {
-        font-size: 14px !important;
+        font-size: 13px !important;
       }
 
       .tv-body-lr {
         flex-direction: column !important;
         height: auto !important;
         overflow: visible !important;
-        gap: 20px !important;
+        gap: 16px !important;
+        margin: 12px 0 !important;
       }
 
       .tv-left-today, .tv-right-upcoming {
@@ -593,20 +614,23 @@
 
       .tv-today-timeline {
         overflow: visible !important;
+        height: auto !important;
+        gap: 10px !important;
       }
 
-      /* ĐIỆN THOẠI DOC: CỘT GIỜ CHUYỂN LÊN TRÊN TIÊU ĐỀ */
+      /* ĐIỆN THOẠI DỌC: CỘT GIỜ CHUYỂN LÊN TRÊN TIÊU ĐỀ */
       .tv-timeline-item {
         flex-direction: column !important;
         align-items: flex-start !important;
-        gap: 8px !important;
-        padding: 14px 16px !important;
+        gap: 6px !important;
+        padding: 12px 14px !important;
         min-height: auto !important;
+        border-radius: 14px !important;
       }
 
       .tv-item-time {
         flex: none !important;
-        font-size: clamp(20px, 5vw, 26px) !important;
+        font-size: clamp(18px, 4.5vw, 24px) !important;
         margin-bottom: 2px;
       }
 
@@ -616,8 +640,9 @@
       }
 
       .tv-item-title {
-        font-size: clamp(15px, 4vw, 18px) !important;
+        font-size: clamp(15px, 3.8vw, 17px) !important;
         -webkit-line-clamp: 3 !important;
+        margin-bottom: 4px !important;
       }
 
       .tv-item-status {
@@ -632,7 +657,7 @@
         flex-direction: column !important;
         align-items: flex-start !important;
         gap: 8px !important;
-        padding: 12px 16px !important;
+        padding: 12px 14px !important;
       }
 
       .tv-footer-left {
@@ -656,12 +681,12 @@
       }
 
       .tv-item-time {
-        flex: 0 0 95px;
+        flex: 0 0 90px;
         font-size: clamp(20px, 2.2vw, 28px);
       }
 
       .tv-item-title {
-        font-size: clamp(16px, 1.5vw, 22px);
+        font-size: clamp(15px, 1.5vw, 20px);
       }
     }
   </style>
@@ -674,6 +699,7 @@
     
     <header class="tv-header">
       <div class="tv-brand">
+        <img src="/emblem.png" alt="Quốc huy Việt Nam" class="tv-emblem-img" onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/a/a1/Coat_of_arms_of_Vietnam.svg';">
         <div class="tv-brand-titles">
           <h2>ỦY BAN NHÂN DÂN XÃ NGHĨA LÂM</h2>
           <span class="tv-subbrand">HỆ THỐNG THÔNG TIN & LỊCH CÔNG TÁC ĐIỆN TỬ</span>
@@ -767,53 +793,79 @@
       return [
         {
           id: 'tv-fb-1',
-          title: 'Giao ban lãnh đạo UBND xã và Thường trực HĐND xã',
+          title: 'Hội nghị tổng kết toàn diện công tác Đảng, xây dựng hệ thống chính trị năm 2026 và triển khai phương hướng, nhiệm vụ trọng tâm phát triển kinh tế - xã hội năm 2027 trên địa bàn xã Nghĩa Lâm',
           start_time: `${todayISO} 07:30`,
           end_time: `${todayISO} 08:30`,
-          location: 'Phòng họp tầng 2',
-          chairperson: 'Đ/c Nguyễn Hùng Cường - Chủ tịch UBND xã',
+          location: 'Hội trường lớn tầng 2 UBND xã',
+          chairperson: 'Đ/c Đồng Văn Hùng - Bí thư Đảng ủy xã',
           status: 'completed'
         },
         {
           id: 'tv-fb-2',
-          title: 'Làm việc về tiến độ hồ sơ đất đai và Giải phóng mặt bằng (GPMB)',
-          start_time: `${todayISO} 09:00`,
-          end_time: `${todayISO} 11:30`,
-          location: 'Bộ phận chuyên môn & Địa chính',
-          chairperson: 'Đ/c Lô Xuân Du - Phó Chủ tịch UBND xã',
+          title: 'Họp Giao ban Thường trực HĐND - UBND xã tháng 9 triển khai các kế hoạch phát triển kinh tế xã hội, quản lý đất đai và an ninh quốc phòng',
+          start_time: `${todayISO} 08:30`,
+          end_time: `${todayISO} 09:00`,
+          location: 'Phòng họp số 1 UBND xã',
+          chairperson: 'Đ/c Nguyễn Hùng Cường - Chủ tịch UBND xã',
           status: 'completed'
         },
         {
           id: 'tv-fb-3',
-          title: 'Làm việc với Phòng Kinh tế về Thu ngân sách & Đầu tư công',
+          title: 'Làm việc với Đoàn kiểm tra liên ngành về công tác quản lý trật tự xây dựng, tài nguyên môi trường và giải phóng mặt bằng các dự án trọng điểm trên địa bàn',
+          start_time: `${todayISO} 09:00`,
+          end_time: `${todayISO} 10:30`,
+          location: 'Bộ phận Địa chính - Xây dựng xã',
+          chairperson: 'Đ/c Lô Xuân Du - Phó Chủ tịch UBND xã',
+          status: 'completed'
+        },
+        {
+          id: 'tv-fb-4',
+          title: 'Hội nghị đối thoại trực tiếp giữa Người đứng đầu Cấp ủy, Chính quyền với Nhân dân xã Nghĩa Lâm quý III năm 2026',
+          start_time: `${todayISO} 10:30`,
+          end_time: `${todayISO} 11:30`,
+          location: 'Hội trường trung tâm Văn hóa xã',
+          chairperson: 'Đ/c Bí thư Đảng ủy & Đ/c Chủ tịch UBND xã',
+          status: 'completed'
+        },
+        {
+          id: 'tv-fb-5',
+          title: 'Họp Ban Chỉ đạo cải cách hành chính, chuyển đổi số và đề án 06 về phát triển ứng dụng dữ liệu dân cư trên địa bàn xã',
+          start_time: `${todayISO} 13:30`,
+          end_time: `${todayISO} 15:30`,
+          location: 'Phòng họp trực tuyến UBND xã',
+          chairperson: 'Đ/c Chủ tịch UBND xã',
+          status: 'completed'
+        },
+        {
+          id: 'tv-fb-6',
+          title: 'Làm việc với đại diện các Phòng ban Huyện Nghĩa Hưng về công tác Thu ngân sách địa phương và Kế hoạch đầu tư công trung hạn giai đoạn 2026 - 2030',
           start_time: `${todayISO} 15:30`,
-          end_time: `${todayISO} 16:45`,
-          location: 'Phòng họp UBND xã',
+          end_time: `${todayISO} 16:30`,
+          location: 'Phòng họp UBND xã Nghĩa Lâm',
           chairperson: 'Đ/c Chủ tịch UBND xã',
           status: 'ongoing'
         },
         {
-          id: 'tv-fb-4',
-          title: 'Xử lý công việc nội bộ và ký duyệt văn bản hành chính',
-          start_time: `${todayISO} 17:00`,
-          end_time: `${todayISO} 17:30`,
-          location: 'Phòng làm việc Chủ tịch',
-          chairperson: 'Đ/c Chủ tịch UBND xã',
+          id: 'tv-fb-7',
+          title: 'Xử lý công việc nội bộ, duyệt hồ sơ chính sách xã hội và ký chứng thực văn bản điện tử tại bộ phận Một cửa',
+          start_time: `${todayISO} 16:30`,
+          end_time: `${todayISO} 17:15`,
+          location: 'Bộ phận Tiếp nhận và Trả kết quả',
+          chairperson: 'Lãnh đạo UBND xã trực ban',
           status: 'upcoming'
         },
         {
-          id: 'tv-fb-5',
-          title: 'Rà soát các nhiệm vụ trọng tâm cần xử lý gấp trong ngày',
-          start_time: `${todayISO} 17:30`,
+          id: 'tv-fb-8',
+          title: 'Rà soát khẩn công tác phòng chống thiên tai, tìm kiếm cứu nạn và bảo vệ đê điều trong mùa mưa bão năm 2026',
+          start_time: `${todayISO} 17:15`,
           end_time: `${todayISO} 18:00`,
-          location: 'Văn phòng HĐND & UBND',
-          chairperson: 'Chỉ đạo khẩn',
-          status: 'emergency',
-          is_emergency: true
+          location: 'Văn phòng Ban Chỉ huy PCTT & TKCN xã',
+          chairperson: 'Đ/c Trưởng Ban Chỉ huy PCTT xã',
+          status: 'upcoming'
         },
         {
-          id: 'tv-fb-6',
-          title: 'Họp giao ban triển khai công tác tuần mới',
+          id: 'tv-fb-9',
+          title: 'Họp giao ban triển khai công tác tuần mới toàn địa bàn',
           start_time: `${tomorrowISO} 07:30`,
           end_time: `${tomorrowISO} 09:00`,
           location: 'Hội trường lớn UBND xã',
@@ -821,20 +873,11 @@
           status: 'scheduled'
         },
         {
-          id: 'tv-fb-7',
-          title: 'Hội nghị đối thoại trực tiếp giải quyết kiến nghị nhân dân',
+          id: 'tv-fb-10',
+          title: 'Kiểm tra thực địa tiến độ các công trình giao thông nông thôn mới',
           start_time: `${tomorrowISO} 09:15`,
           end_time: `${tomorrowISO} 11:30`,
-          location: 'Hội trường lớn UBND xã',
-          chairperson: 'Bí thư Đảng ủy & Chủ tịch UBND',
-          status: 'scheduled'
-        },
-        {
-          id: 'tv-fb-8',
-          title: 'Kiểm tra thực địa tiến độ các công trình trọng điểm',
-          start_time: `${tomorrowISO} 14:00`,
-          end_time: `${tomorrowISO} 17:00`,
-          location: 'Hiện trường công trình Thôn 3',
+          location: 'Tuyến đường Thôn 2 & Thôn 3',
           chairperson: 'Phó Chủ tịch UBND xã',
           status: 'scheduled'
         }
@@ -845,7 +888,14 @@
     let tvRemainingEvents = [];
     let tvCurrentPage = 0;
     let tvPageInterval = null;
-    const TV_PAGE_SIZE = 4; // Tối đa 4 sự kiện/trang trên TV landscape để tuyệt đối không tràn/ép chữ
+
+    function getTvPageSize() {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) return 999; // Mobile cuộn dọc bình thường
+      const h = window.innerHeight;
+      if (h <= 768) return 3; // TV màn hình 768p: 3 sự kiện/trang
+      return 4; // TV màn hình 1080p: 4 sự kiện/trang
+    }
 
     async function loadTVData() {
       const syncStatusEl = document.getElementById('tv-sync-status');
@@ -915,8 +965,9 @@
       if (!tvPageInterval) {
         tvPageInterval = setInterval(() => {
           const isMobile = window.innerWidth <= 768;
-          if (!isMobile && tvTodayEvents && tvTodayEvents.length > TV_PAGE_SIZE) {
-            const totalPages = Math.ceil(tvTodayEvents.length / TV_PAGE_SIZE);
+          const pageSize = getTvPageSize();
+          if (!isMobile && tvTodayEvents && tvTodayEvents.length > pageSize) {
+            const totalPages = Math.ceil(tvTodayEvents.length / pageSize);
             tvCurrentPage = (tvCurrentPage + 1) % totalPages;
             renderTVGrid(tvTodayEvents);
           }
@@ -956,14 +1007,15 @@
       });
 
       const isMobile = window.innerWidth <= 768;
-      const totalPages = Math.ceil(todayEvents.length / TV_PAGE_SIZE) || 1;
+      const pageSize = getTvPageSize();
+      const totalPages = Math.ceil(todayEvents.length / pageSize) || 1;
 
       if (tvCurrentPage >= totalPages) tvCurrentPage = 0;
 
       // Trên Mobile: Hiển thị tất cả lịch hôm nay và cho cuộn dọc. Trên TV: Phân trang tự động.
       const eventsToRender = isMobile 
         ? todayEvents 
-        : todayEvents.slice(tvCurrentPage * TV_PAGE_SIZE, (tvCurrentPage + 1) * TV_PAGE_SIZE);
+        : todayEvents.slice(tvCurrentPage * pageSize, (tvCurrentPage + 1) * pageSize);
 
       if (pageBadge) {
         if (!isMobile && totalPages > 1) {
