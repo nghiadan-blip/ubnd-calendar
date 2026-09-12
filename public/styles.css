@@ -1920,3 +1920,190 @@ body {
   border-top: 1px solid #E4EAF2;
 }
 
+/* ==========================================================================
+   RESPONSIVE MOBILE & TEXT OVERFLOW PROTECTION SYSTEM
+   ========================================================================== */
+
+/* Universal Text Wrapping to Prevent Overflows on All Devices */
+.exec-event-title,
+.exec-hero-title,
+.exec-tomorrow-title,
+.event-title,
+.reception-title,
+.details-main-title,
+.tv-item-title,
+.tv-hero-title,
+.tv-tomorrow-title {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Mobile Screens (Phones & Small Tablets <= 768px) */
+@media (max-width: 768px) {
+  #app-container {
+    padding: 12px 14px;
+  }
+
+  .main-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 14px;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .pill-btn {
+    font-size: 0.78rem;
+    padding: 6px 12px;
+    max-width: 100%;
+    white-space: normal;
+    text-align: left;
+  }
+
+  .live-clock-widget {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+
+  .exec-title-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .exec-title-text h1 {
+    font-size: 1.4rem;
+  }
+
+  .exec-today-card {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .exec-dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .exec-event-row {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .exec-event-time {
+    flex: 0 0 100%;
+    font-size: 1.15rem;
+  }
+
+  .exec-status-badge {
+    margin-left: auto;
+  }
+
+  .exec-hero-time {
+    font-size: 2.2rem;
+  }
+
+  .toolbar-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .week-selector-group {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .filter-controls {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .search-box, 
+  .filter-controls select, 
+  .filter-controls button {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .navigation-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 6px;
+  }
+
+  .tab-item {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+  }
+
+  .reception-layout {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .exec-focus-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+
+  .exec-focus-right {
+    border-left: none;
+    padding-left: 0;
+  }
+
+  .modal-content {
+    padding: 18px 16px;
+    max-width: 96vw;
+    border-radius: 18px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .details-layout {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .details-qr-section {
+    align-items: center;
+    text-align: center;
+  }
+}
+
+/* Extra Small Phones (<= 480px) */
+@media (max-width: 480px) {
+  .header-titles h1 {
+    font-size: 1.1rem;
+  }
+
+  .header-titles p {
+    font-size: 0.72rem;
+  }
+
+  .exec-event-title {
+    font-size: 0.92rem;
+  }
+
+  .exec-event-meta {
+    font-size: 0.78rem;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
