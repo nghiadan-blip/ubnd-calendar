@@ -11,9 +11,6 @@ let settings = {
   appsScriptUrl: '',       // Google Apps Script Web App URL
   gcalId: 'primary',       // Google Calendar ID
   webhookSecret: '',       // GitHub Webhook Secret
-  aiProvider: 'deepseek',  // 'deepseek' hoặc 'openai'
-  aiModel: 'deepseek-chat',// Tên model AI
-  aiKey: '',               // API Key lưu cục bộ
   tvFocus: 'Hồ sơ đất đai • Thu ngân sách • Giải phóng mặt bằng (GPMB)'
 };
 
@@ -178,12 +175,7 @@ async function loadSettings() {
         settings.appsScriptUrl = serverSettings.appsScriptUrl;
         settings.gcalId = serverSettings.gcalId || settings.gcalId;
         settings.webhookSecret = serverSettings.webhookSecret || settings.webhookSecret;
-        settings.aiProvider = serverSettings.aiProvider || settings.aiProvider;
-        settings.aiModel = serverSettings.aiModel || settings.aiModel;
         settings.tvFocus = serverSettings.tvFocus || settings.tvFocus;
-        if (!settings.aiKey && serverSettings.aiKey && serverSettings.aiKey !== '********') {
-          settings.aiKey = serverSettings.aiKey;
-        }
       }
     }
   } catch (e) {
@@ -198,10 +190,6 @@ async function loadSettings() {
   document.getElementById('setting-webhook-secret').value = settings.webhookSecret ? '********' : '';
   document.getElementById('setting-tv-focus').value = settings.tvFocus || '';
 
-  document.getElementById('setting-ai-provider').value = settings.aiProvider || 'deepseek';
-  document.getElementById('setting-ai-model').value = settings.aiModel || 'deepseek-chat';
-  document.getElementById('setting-ai-key').value = settings.aiKey ? '********' : '';
-
   updateAppsScriptButtonState();
 }
 
@@ -211,20 +199,12 @@ async function saveSettings() {
   const appsScriptUrl = document.getElementById('setting-apps-script-url').value.trim();
   const webhookSecretInput = document.getElementById('setting-webhook-secret').value.trim();
   const tvFocus = document.getElementById('setting-tv-focus').value.trim();
-  const aiProvider = document.getElementById('setting-ai-provider').value;
-  const aiModel = document.getElementById('setting-ai-model').value.trim();
-  const aiKeyInput = document.getElementById('setting-ai-key').value.trim();
 
   settings.syncMode = syncMode;
   settings.gcalId = gcalId;
   settings.appsScriptUrl = appsScriptUrl;
   settings.tvFocus = tvFocus;
-  settings.aiProvider = aiProvider;
-  settings.aiModel = aiModel;
 
-  if (aiKeyInput && aiKeyInput !== '********') {
-    settings.aiKey = aiKeyInput;
-  }
   if (webhookSecretInput && webhookSecretInput !== '********') {
     settings.webhookSecret = webhookSecretInput;
   }
@@ -244,10 +224,7 @@ async function saveSettings() {
         gcalId,
         appsScriptUrl,
         webhookSecret: settings.webhookSecret,
-        tvFocus,
-        aiProvider,
-        aiModel,
-        aiKey: settings.aiKey
+        tvFocus
       })
     });
   } catch (err) {
@@ -255,7 +232,7 @@ async function saveSettings() {
   }
 
   closeModal('modal-settings');
-  alert('Đã lưu cấu hình hệ thống & API Deepseek thành công!');
+  alert('Đã lưu cấu hình hệ thống thành công!');
   checkBackendConnection();
   loadEvents();
 }
@@ -1006,15 +983,11 @@ function openDetailsModal(evt) {
   
   // Nút admin ẩn hiện
   const btnEdit = document.getElementById('btn-edit-from-details');
-  const btnAiMinutes = document.getElementById('btn-ai-minutes-trigger');
   
   if (isAdminMode) {
     btnEdit.classList.remove('hidden');
-    // Chỉ hiện nút soạn biên bản họp AI cho các cuộc họp đã diễn ra hoặc đã kết thúc
-    btnAiMinutes.classList.remove('hidden');
   } else {
     btnEdit.classList.add('hidden');
-    btnAiMinutes.classList.add('hidden');
   }
 
   const gcalBtn = document.getElementById('btn-add-gcal-link');
@@ -1140,7 +1113,6 @@ function resetEventForm() {
 
   document.getElementById('event-id').value = '';
   document.getElementById('btn-delete-event').classList.add('hidden');
-  document.getElementById('event-ai-raw-text').value = '';
   
   // Dọn dẹp khung xem trước mã QR Code
   const qrContainer = document.getElementById('admin-qr-preview-container');
@@ -1149,9 +1121,6 @@ function resetEventForm() {
     qrContainer.classList.add('hidden');
     document.getElementById('admin-qr-preview-box').innerHTML = '';
   }
-
-  const details = document.querySelector('.ai-extractor-details');
-  if (details) details.removeAttribute('open');
 
   hideConflictWarning();
 }
@@ -1413,333 +1382,7 @@ async function importEventsToDatabase(importedEvents) {
   loadEvents();
 }
 
-// ==========================================================================
-// INTEGRATE AI ASSISTANT (DEEPSEEK / CODEX API)
-// ==========================================================================
 
-async function handleAIExtract() {
-  const rawText = document.getElementById('event-ai-raw-text').value.trim();
-  const btn = document.getElementById('btn-ai-extract');
-
-  if (!rawText) {
-    alert('Vui lòng dán văn bản công văn hoặc giấy mời họp để AI phân tích.');
-    return;
-  }
-
-  if (!settings.aiKey) {
-    alert('Vui lòng cấu hình API Key của DeepSeek/Codex trong phần Cài đặt trước.');
-    openModal('modal-settings');
-    return;
-  }
-
-  const originalBtnHtml = btn.innerHTML;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> AI đang phân tích văn bản...';
-  btn.disabled = true;
-
-  try {
-    const extractedData = await callAICompletionsAPI(rawText);
-    
-    if (extractedData) {
-      document.getElementById('event-title').value = extractedData.title || '';
-      document.getElementById('event-category').value = extractedData.category || 'ubnd';
-      document.getElementById('event-chairperson').value = extractedData.chairperson || '';
-      document.getElementById('event-location').value = extractedData.location || '';
-      document.getElementById('event-attendees').value = extractedData.attendees || '';
-      document.getElementById('event-preparing').value = extractedData.preparing_unit || '';
-      document.getElementById('event-document').value = extractedData.document_link || '';
-      document.getElementById('event-status').value = extractedData.status || 'scheduled';
-
-      if (extractedData.start_time) {
-        document.getElementById('event-start').value = extractedData.start_time.replace(' ', 'T');
-      }
-      if (extractedData.end_time) {
-        document.getElementById('event-end').value = extractedData.end_time.replace(' ', 'T');
-      }
-
-      alert('Đã trích xuất thông tin lịch thành công! Bạn hãy kiểm tra lại các trường thông tin trong form bên dưới và ấn "Lưu lịch họp".');
-    }
-  } catch (err) {
-    alert('Lỗi gọi API AI: ' + err.message);
-  } finally {
-    btn.innerHTML = originalBtnHtml;
-    btn.disabled = false;
-  }
-}
-
-async function callAICompletionsAPI(rawText) {
-  const systemPrompt = `Bạn là Trợ lý số hóa văn phòng hành chính cho UBND xã tại Việt Nam.
-Nhiệm vụ của bạn là đọc kỹ đoạn văn bản thô dán vào (giấy mời họp, công văn chỉ đạo, thông báo) và bóc tách thông tin chính xác, điền vào một cấu trúc JSON.
-Hãy trả về JSON sạch, KHÔNG có khối markdown vây quanh (không viết \`\`\`json ... \`\`\`), chỉ trả về chuỗi JSON duy nhất.
-
-Cấu trúc JSON yêu cầu bóc tách:
-{
-  "title": "Tên cuộc họp rút gọn (ngắn gọn, xúc tích)",
-  "category": "Phân loại cuộc họp: chỉ chọn 1 trong 4 nhãn ('dang_uy' cho Đảng/HĐND/Bí thư, 'tiep_dan' cho tiếp công dân/giải quyết khiếu nại, 'thuc_dia' cho kiểm tra hiện trường/cơ sở/thôn, 'ubnd' cho các cuộc họp hành chính/giao ban/chuyên môn khác)",
-  "start_time": "Thời gian bắt đầu định dạng 'YYYY-MM-DD HH:mm'. Nếu văn bản không nêu rõ năm, hãy mặc định là năm 2026. Định dạng đúng giờ và ngày hành chính.",
-  "end_time": "Thời gian kết thúc định dạng 'YYYY-MM-DD HH:mm'. Nếu không ghi rõ thời gian kết thúc, hãy mặc định cuộc họp kết thúc sau giờ bắt đầu 2 giờ 30 phút.",
-  "chairperson": "Người chủ trì cuộc họp (ghi rõ họ tên hoặc chức vụ, ví dụ: 'Đ/c Nguyễn Văn A - Chủ tịch UBND xã')",
-  "location": "Địa điểm họp (ví dụ: 'Phòng họp lớn tầng 2', 'Hội trường xã', 'Thôn 3')",
-  "attendees": "Thành phần tham dự cuộc họp (phân tách bằng dấu phẩy, ví dụ: 'Thường trực UBND, Trưởng công an, Công chức Văn phòng')",
-  "preparing_unit": "Đơn vị chuẩn bị nội dung họp (nếu có nhắc đến bộ phận chuẩn bị báo cáo/tài liệu, nếu không có để 'Văn phòng UBND')",
-  "document_link": "Tìm các URL liên kết tài liệu đính kèm nếu có nhắc đến trong văn bản, nếu không để chuỗi rỗng",
-  "status": "Mặc định để 'scheduled'"
-}`;
-
-  try {
-    const res = await fetch('/api/ai/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: rawText }
-        ],
-        provider: settings.aiProvider,
-        model: settings.aiModel,
-        apiKey: settings.aiKey
-      })
-    });
-    if (res.ok) {
-      const result = await res.json();
-      let content = result.choices[0].message.content.trim();
-      if (content.startsWith('```')) {
-        content = content.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
-      }
-      return JSON.parse(content);
-    }
-  } catch (err) {
-    console.warn('Proxy AI Server fallback sang direct API client...', err);
-  }
-
-  let endpoint = 'https://api.deepseek.com/chat/completions';
-  let modelName = settings.aiModel || 'deepseek-chat';
-  if (settings.aiProvider === 'openai') {
-    endpoint = 'https://api.openai.com/v1/chat/completions';
-    if (!settings.aiModel || settings.aiModel === 'deepseek-chat') modelName = 'gpt-4o';
-  }
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${settings.aiKey}`
-    },
-    body: JSON.stringify({
-      model: modelName,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: rawText }
-      ],
-      temperature: 0.1
-    })
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`HTTP ${response.status}: ${errText || 'Lỗi kết nối API AI'}`);
-  }
-
-  const result = await response.json();
-  let content = result.choices[0].message.content.trim();
-  if (content.startsWith('```')) {
-    content = content.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
-  }
-  return JSON.parse(content);
-}
-
-// AI hiệu chỉnh tiêu đề hành chính
-async function handleAIPolishTitle() {
-  const titleInput = document.getElementById('event-title');
-  const rawTitle = titleInput.value.trim();
-  const btn = document.getElementById('btn-ai-polish-title');
-
-  if (!rawTitle) {
-    alert('Vui lòng nhập nội dung công việc ngắn gọn trước khi tối ưu văn phong.');
-    return;
-  }
-
-  const originalBtnHtml = btn.innerHTML;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>...';
-  btn.disabled = true;
-
-  try {
-    const refinedTitle = await callAIPolishTitleAPI(rawTitle);
-    if (refinedTitle) {
-      titleInput.value = refinedTitle;
-    }
-  } catch (err) {
-    alert('Lỗi hiệu chỉnh AI: ' + err.message);
-  } finally {
-    btn.innerHTML = originalBtnHtml;
-    btn.disabled = false;
-  }
-}
-
-async function callAIPolishTitleAPI(rawTitle) {
-  const systemPrompt = `Bạn là chuyên gia biên soạn văn phong hành chính cho chính phủ Việt Nam.
-Nhiệm vụ của bạn là nhận vào một tiêu đề cuộc họp/công việc hành chính viết tắt hoặc viết vắn tắt bằng tiếng Việt, và viết lại nó thành một câu tiêu đề trang trọng, đúng văn phong hành chính nhà nước cấp xã/phường.
-Chỉ trả về tiêu đề đã hiệu chỉnh, KHÔNG giải thích thêm, không để trong ngoặc kép.
-Ví dụ: "họp thôn 3 sửa đường" -> "Tổ chức Hội nghị kiểm tra thực địa và bàn phương án thi công nâng cấp đường giao thông nông thôn tại Thôn 3"`;
-
-  try {
-    const res = await fetch('/api/ai/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: rawTitle }
-        ],
-        provider: settings.aiProvider,
-        model: settings.aiModel,
-        apiKey: settings.aiKey
-      })
-    });
-    if (res.ok) {
-      const result = await res.json();
-      return result.choices[0].message.content.trim();
-    }
-  } catch (err) {
-    console.warn('Proxy AI Server fallback...', err);
-  }
-
-  let endpoint = 'https://api.deepseek.com/chat/completions';
-  let modelName = settings.aiModel || 'deepseek-chat';
-  if (settings.aiProvider === 'openai') {
-    endpoint = 'https://api.openai.com/v1/chat/completions';
-    if (!settings.aiModel || settings.aiModel === 'deepseek-chat') modelName = 'gpt-4o';
-  }
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${settings.aiKey}`
-    },
-    body: JSON.stringify({
-      model: modelName,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: rawTitle }
-      ],
-      temperature: 0.3
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
-
-  const result = await response.json();
-  return result.choices[0].message.content.trim();
-}
-
-// AI Biên soạn biên bản & kết luận họp
-async function handleAIGenerateMinutes() {
-  const rawNotes = document.getElementById('ai-minutes-raw').value.trim();
-  const btn = document.getElementById('btn-ai-generate-minutes');
-
-  if (!rawNotes) {
-    alert('Vui lòng nhập vắn tắt diễn biến họp để AI làm việc.');
-    return;
-  }
-
-  const originalBtnHtml = btn.innerHTML;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> AI đang biên soạn kết luận cuộc họp...';
-  btn.disabled = true;
-
-  try {
-    const minutesResult = await callAIGenerateMinutesAPI(selectedEvent, rawNotes);
-    if (minutesResult) {
-      document.getElementById('ai-minutes-result-box').textContent = minutesResult;
-      document.getElementById('ai-minutes-result-container').classList.remove('hidden');
-    }
-  } catch (err) {
-    alert('Lỗi biên soạn kết luận: ' + err.message);
-  } finally {
-    btn.innerHTML = originalBtnHtml;
-    btn.disabled = false;
-  }
-}
-
-async function callAIGenerateMinutesAPI(evt, rawNotes) {
-  const systemPrompt = `Bạn là Trợ lý soạn văn bản hành chính cho văn phòng UBND xã Nghĩa Lâm, tỉnh Nghệ An.
-Nhiệm vụ của bạn là nhận thông tin cơ bản của một cuộc họp và các ghi chép thảo luận thô, sau đó biên soạn thành một văn bản "THÔNG BÁO KẾT LUẬN CUỘC HỌP" trang trọng, chuyên nghiệp và đúng định dạng quy chuẩn văn bản hành chính Việt Nam.
-
-Văn bản cần thể hiện đủ:
-1. Quốc hiệu & Tiêu ngữ chính phủ viết hoa
-2. Cơ quan ban hành: ỦY BAN NHÂN DÂN XÃ NGHĨA LÂM (Số: .../TB-UBND) bên trái, địa danh ngày tháng bên phải.
-3. Tiêu đề: THÔNG BÁO Kết luận của [Chủ trì] tại cuộc họp [Tiêu đề cuộc họp]
-4. Nội dung chính:
-   - Phần mở đầu: Nêu thời gian, địa điểm, thành phần họp dưới sự chủ trì của [Chủ trì].
-   - Phần nội dung thảo luận: Tóm tắt vắn tắt diễn biến, các ý kiến thảo luận (được chuyển đổi sang câu từ trang trọng).
-   - Phần kết luận chỉ đạo (Quan trọng nhất): Liệt kê rõ ràng các kết luận chỉ đạo của người chủ trì, ghi rõ giao việc cho ai/bộ phận nào, và thời gian hoàn thành (nếu có).
-5. Nơi nhận ở dưới cùng bên trái.
-
-Chỉ trả về văn bản thông báo kết luận cuộc họp đã hoàn thiện, không giải thích.`;
-
-  const userPrompt = `THÔNG TIN CUỘC HỌP GỐC:
-- Tiêu đề: ${evt.title}
-- Chủ trì: ${evt.chairperson}
-- Thời gian: ${evt.start_time}
-- Địa điểm: ${evt.location}
-- Thành phần: ${evt.attendees}
-
-GHI CHÉP DIỄN BIẾN THẢO LUẬN THÔ:
-${rawNotes}`;
-
-  try {
-    const res = await fetch('/api/ai/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        provider: settings.aiProvider,
-        model: settings.aiModel,
-        apiKey: settings.aiKey
-      })
-    });
-    if (res.ok) {
-      const result = await res.json();
-      return result.choices[0].message.content.trim();
-    }
-  } catch (err) {
-    console.warn('Proxy AI Server fallback...', err);
-  }
-
-  let endpoint = 'https://api.deepseek.com/chat/completions';
-  let modelName = settings.aiModel || 'deepseek-chat';
-  if (settings.aiProvider === 'openai') {
-    endpoint = 'https://api.openai.com/v1/chat/completions';
-    if (!settings.aiModel || settings.aiModel === 'deepseek-chat') modelName = 'gpt-4o';
-  }
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${settings.aiKey}`
-    },
-    body: JSON.stringify({
-      model: modelName,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      temperature: 0.2
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
-
-  const result = await response.json();
-  return result.choices[0].message.content.trim();
-}
 
 // ==========================================================================
 // TV VIEW DISPLAY (KIOSK MODE) IMPLEMENTATION
@@ -2091,7 +1734,7 @@ function setupEventListeners() {
         if (!window.location.search.includes('mode=admin')) {
           window.history.pushState({}, '', '?mode=admin&pass=NghiaLam@2026');
         }
-        alert('Đã chuyển sang Chế độ Quản trị hệ thống! Bạn có thể Thêm mới, Chỉnh sửa, Xóa và Biên soạn biên bản AI.');
+        alert('Đã chuyển sang Chế độ Quản trị hệ thống! Bạn có thể Thêm mới, Chỉnh sửa và Xóa lịch họp.');
       } else {
         isAdminMode = false;
         sessionStorage.removeItem('admin_password');
@@ -2147,11 +1790,6 @@ function setupEventListeners() {
   
   document.getElementById('input-upload-file').addEventListener('change', handleFileUpload);
 
-  document.getElementById('btn-ai-extract').addEventListener('click', handleAIExtract);
-  
-  // Lắng nghe sự kiện click nút Tối ưu tiêu đề AI
-  document.getElementById('btn-ai-polish-title').addEventListener('click', handleAIPolishTitle);
-
   // Lắng nghe sự kiện click nút Tạo mã QR thủ công trong Admin Panel
   document.getElementById('btn-generate-qr-admin').addEventListener('click', () => {
     const urlInput = document.getElementById('event-document').value.trim();
@@ -2181,31 +1819,7 @@ function setupEventListeners() {
     }
   });
 
-  // Kích hoạt Soạn biên bản AI
-  document.getElementById('btn-ai-minutes-trigger').addEventListener('click', () => {
-    if (selectedEvent) {
-      document.getElementById('ai-minutes-raw').value = '';
-      document.getElementById('ai-minutes-result-box').textContent = '';
-      document.getElementById('ai-minutes-result-container').classList.add('hidden');
-      closeModal('modal-details');
-      openModal('modal-ai-minutes');
-    }
-  });
 
-  // Gọi AI viết Biên bản họp
-  document.getElementById('btn-ai-generate-minutes').addEventListener('click', handleAIGenerateMinutes);
-
-  // Copy biên bản họp AI
-  document.getElementById('btn-copy-ai-minutes').addEventListener('click', () => {
-    const text = document.getElementById('ai-minutes-result-box').textContent;
-    if (text) {
-      navigator.clipboard.writeText(text).then(() => {
-        alert('Đã sao chép nội dung Thông báo kết luận cuộc họp!');
-      }).catch(err => {
-        alert('Lỗi sao chép: ' + err);
-      });
-    }
-  });
 
   const btnEnterTv = document.getElementById('btn-enter-tv');
   if (btnEnterTv) {
@@ -2348,23 +1962,15 @@ function setupEventListeners() {
     const appsScriptUrl = document.getElementById('setting-apps-script-url').value.trim();
     const gcalId = document.getElementById('setting-gcal-id').value.trim();
     const webhookSecretInput = document.getElementById('setting-webhook-secret').value.trim();
-    const aiProvider = document.getElementById('setting-ai-provider').value;
-    const aiModel = document.getElementById('setting-ai-model').value.trim();
-    const aiKeyInput = document.getElementById('setting-ai-key').value.trim();
     const tvFocus = document.getElementById('setting-tv-focus').value.trim();
 
     settings.syncMode = syncMode;
     settings.appsScriptUrl = appsScriptUrl;
     settings.gcalId = gcalId || 'primary';
-    settings.aiProvider = aiProvider;
-    settings.aiModel = aiModel || (aiProvider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o');
     settings.tvFocus = tvFocus || 'Hồ sơ đất đai • Thu ngân sách • Giải phóng mặt bằng (GPMB)';
     
     if (webhookSecretInput !== '********') {
       settings.webhookSecret = webhookSecretInput;
-    }
-    if (aiKeyInput !== '********') {
-      settings.aiKey = aiKeyInput;
     }
 
     localStorage.setItem('ubnd_calendar_settings', JSON.stringify(settings));

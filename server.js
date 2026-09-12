@@ -394,7 +394,6 @@ app.get('/api/settings', (req, res) => {
       const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
       // Masking các dữ liệu nhạy cảm
       const safeSettings = { ...settings };
-      if (safeSettings.aiKey) safeSettings.aiKey = '********';
       if (safeSettings.webhookSecret) safeSettings.webhookSecret = '********';
       return res.json(safeSettings);
     } catch (e) {
@@ -414,11 +413,8 @@ app.post('/api/settings', requireAuth, (req, res) => {
       currentSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
     }
     
-    // Hợp nhất cấu hình, giữ lại aiKey và webhookSecret thật nếu gửi lên là masked '********'
+    // Hợp nhất cấu hình, giữ lại webhookSecret thật nếu gửi lên là masked '********'
     const mergedSettings = { ...currentSettings, ...newSettings };
-    if (newSettings.aiKey === '********') {
-      mergedSettings.aiKey = currentSettings.aiKey || '';
-    }
     if (newSettings.webhookSecret === '********') {
       mergedSettings.webhookSecret = currentSettings.webhookSecret || '';
     }
@@ -595,64 +591,7 @@ async function downloadEmblem() {
   }
 }
 
-// 10. API Proxy AI DeepSeek / OpenAI (Xử lý phía Server để bảo mật API key và loại bỏ hoàn toàn lỗi CORS)
-app.post('/api/ai/chat', async (req, res) => {
-  try {
-    let { messages, prompt, rawText, provider, model, apiKey } = req.body;
 
-    const settingsPath = path.join(__dirname, 'settings.json');
-    let serverSettings = {};
-    if (fs.existsSync(settingsPath)) {
-      try {
-        serverSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      } catch (e) {}
-    }
-
-    const effectiveKey = (apiKey && apiKey !== '********') 
-      ? apiKey 
-      : (serverSettings.aiKey || process.env.DEEPSEEK_API_KEY || '');
-
-    const effectiveProvider = provider || serverSettings.aiProvider || 'deepseek';
-    const effectiveModel = model || serverSettings.aiModel || (effectiveProvider === 'openai' ? 'gpt-4o' : 'deepseek-chat');
-
-    let endpoint = 'https://api.deepseek.com/chat/completions';
-    if (effectiveProvider === 'openai') {
-      endpoint = 'https://api.openai.com/v1/chat/completions';
-    }
-
-    if (!effectiveKey) {
-      return res.status(400).json({ error: 'Chưa cấu hình API Key cho Deepseek/OpenAI. Vui lòng nhập API Key trong phần Cấu hình hệ thống.' });
-    }
-
-    const payloadMessages = messages || [
-      { role: 'system', content: prompt || 'Bạn là Trợ lý số hóa văn phòng hành chính UBND xã Nghĩa Lâm.' },
-      { role: 'user', content: rawText || '' }
-    ];
-
-    const aiRes = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${effectiveKey}`
-      },
-      body: JSON.stringify({
-        model: effectiveModel,
-        messages: payloadMessages,
-        temperature: 0.1
-      })
-    });
-
-    if (!aiRes.ok) {
-      const errText = await aiRes.text();
-      return res.status(aiRes.status).json({ error: `Lỗi API AI (${aiRes.status}): ${errText}` });
-    }
-
-    const data = await aiRes.json();
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: 'Lỗi gọi API AI phía Server: ' + err.message });
-  }
-});
 
 // Khởi động server
 app.listen(PORT, () => {

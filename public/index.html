@@ -11,7 +11,7 @@
   <!-- FontAwesome for Premium Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=4.4.0">
+  <link rel="stylesheet" href="styles.css?v=5.0.0">
   <style>
     /* CRITICAL OVERRIDES FOR ADMIN MODALS & ADMIN BUTTONS */
     #tv-mode-container.hidden { display: none !important; visibility: hidden !important; pointer-events: none !important; }
@@ -79,9 +79,9 @@
         </a>
         
         <!-- Settings Button -->
-        <button id="btn-settings" class="pill-btn admin-only" title="Cấu hình hệ thống & nhập API Key Deepseek">
+        <button id="btn-settings" class="pill-btn admin-only" title="Cấu hình hệ thống">
           <i class="fa-solid fa-sliders" style="color: #38BDF8;"></i>
-          <span>⚙ Cấu hình & API Deepseek</span>
+          <span>⚙ Cấu hình hệ thống</span>
         </button>
       </div>
     </header>
@@ -233,8 +233,8 @@
           <button id="btn-upload-calendar" class="btn btn-secondary btn-sm" title="Nhập danh sách lịch họp từ file Excel/CSV hoặc JSON">
             <i class="fa-solid fa-file-import"></i> Nhập từ file (.json/.csv)
           </button>
-          <button id="btn-open-settings-toolbar" class="btn btn-outline btn-sm admin-only" style="border-color: #0EA5E9; color: #0284C7; font-weight: 700;" title="Cấu hình hệ thống & nhập API Key Deepseek">
-            <i class="fa-solid fa-sliders" style="color: #0EA5E9;"></i> Cấu hình & API Deepseek
+          <button id="btn-open-settings-toolbar" class="btn btn-outline btn-sm admin-only" style="border-color: #0EA5E9; color: #0284C7; font-weight: 700;" title="Cấu hình hệ thống">
+            <i class="fa-solid fa-sliders" style="color: #0EA5E9;"></i> Cấu hình hệ thống
           </button>
           <button id="btn-add-event" class="btn btn-success btn-sm">
             <i class="fa-solid fa-plus"></i> Thêm lịch mới
@@ -437,30 +437,9 @@
       <form id="form-event">
         <input type="hidden" id="event-id">
         
-        <!-- Trích xuất bằng AI -->
-        <details class="ai-extractor-details" style="margin-bottom: 20px; border: 1px dashed rgba(16, 185, 129, 0.4); border-radius: 12px; background: #F0FDF4; padding: 12px;">
-          <summary style="font-weight: 700; color: var(--primary); cursor: pointer; outline: none; display: flex; align-items: center; gap: 8px; font-size: 0.85rem;">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> Trực quan: Trích xuất lịch từ văn bản công văn bằng AI
-          </summary>
-          <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
-            <p style="font-size: 0.75rem; color: var(--text-light); line-height: 1.4; margin: 0;">
-              Dán nội dung lời mời họp, thông báo hoặc công văn hành chính dưới dạng văn bản thô vào đây. Trợ lý AI (DeepSeek/Codex) sẽ tự động phân tích bóc tách thông tin và tự điền vào form bên dưới.
-            </p>
-            <textarea id="event-ai-raw-text" class="form-control" rows="3" placeholder="Ví dụ: Giấy mời họp: UBND Huyện kính mời Chủ tịch UBND xã Vy An dự cuộc họp trực tuyến phòng chống dịch vào 09h00 ngày 15/07/2026 tại Phòng họp số 1..."></textarea>
-            <div style="display: flex; justify-content: flex-end;">
-              <button type="button" id="btn-ai-extract" class="btn btn-vibrant btn-sm">
-                <i class="fa-solid fa-microchip-ai"></i> Phân tích văn bản công văn
-              </button>
-            </div>
-          </div>
-        </details>
-        
         <div class="form-group">
-          <label for="event-title" style="display: flex; justify-content: space-between; align-items: center;">
+          <label for="event-title">
             <span>Nội dung công việc <span class="text-danger">*</span></span>
-            <button type="button" id="btn-ai-polish-title" class="btn btn-outline btn-sm" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 6px; gap: 4px;" title="Tối ưu tiêu đề cuộc họp theo văn phong hành chính nhà nước">
-              <i class="fa-solid fa-wand-magic-sparkles text-emerald"></i> Chuẩn hóa văn phong AI
-            </button>
           </label>
           <textarea id="event-title" class="form-control" rows="2" placeholder="Ví dụ: Họp giao ban, Tiếp công dân..." required></textarea>
         </div>
@@ -664,28 +643,6 @@
           <input type="text" id="setting-tv-focus" class="form-control" placeholder="Hồ sơ đất đai • Thu ngân sách • Giải phóng mặt bằng (GPMB)">
         </div>
 
-        <!-- AI Assistant API Integration Settings -->
-        <div class="form-group" style="margin-top: 15px; border-top: 1px solid #E2E8F0; padding-top: 15px;">
-          <label><strong>Cấu hình Trợ lý AI (DeepSeek / Codex API):</strong></label>
-        </div>
-        <div class="form-row">
-          <div class="form-group col-6">
-            <label for="setting-ai-provider">Nhà cung cấp AI</label>
-            <select id="setting-ai-provider" class="form-control">
-              <option value="deepseek">DeepSeek API (Khuyên dùng)</option>
-              <option value="openai">OpenAI / Codex API</option>
-            </select>
-          </div>
-          <div class="form-group col-6">
-            <label for="setting-ai-model">Model AI</label>
-            <input type="text" id="setting-ai-model" class="form-control" placeholder="deepseek-chat hoặc gpt-4o">
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="setting-ai-key">API Key <span id="key-required-badge" style="color: red; font-size: 0.75rem; font-weight: normal;">(Lưu cục bộ tại LocalStorage của bạn)</span></label>
-          <input type="password" id="setting-ai-key" class="form-control" placeholder="Nhập API Key sk-...">
-        </div>
-
         <!-- Test connections buttons -->
         <div class="settings-actions">
           <button id="btn-test-backend" class="btn btn-outline btn-sm">
@@ -779,10 +736,6 @@
               <a id="btn-add-gcal-link" target="_blank" class="btn btn-outline btn-sm btn-gcal">
                 <i class="fa-brands fa-google"></i> Thêm vào Google Lịch
               </a>
-              <!-- Soạn kết luận họp bằng AI -->
-              <button id="btn-ai-minutes-trigger" class="btn btn-secondary btn-sm admin-only hidden" title="Biên soạn thông báo kết luận cuộc họp bằng Trợ lý AI">
-                <i class="fa-solid fa-file-signature text-emerald"></i> Soạn Kết luận AI
-              </button>
             </div>
           </div>
           
@@ -802,50 +755,9 @@
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- MODAL: AI MINUTES & RESOLUTION GENERATOR   -->
-  <!-- ========================================== -->
-  <div id="modal-ai-minutes" class="modal">
-    <div class="modal-content" style="max-width: 700px;">
-      <div class="modal-header">
-        <h3>Trợ lý AI soạn thảo Kết luận & Biên bản họp</h3>
-        <button class="modal-close" data-close="modal-ai-minutes">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 12px; line-height: 1.5;">
-          Nhập vắn tắt diễn biến, các ý kiến phát biểu hoặc kết luận chính của cuộc họp. Trợ lý AI sẽ tự động biên soạn thành một văn bản "Thông báo kết luận cuộc họp" chuẩn thể thức hành chính công Việt Nam.
-        </p>
-        <div class="form-group">
-          <label for="ai-minutes-raw">Diễn biến / Ý kiến thảo luận chính:</label>
-          <textarea id="ai-minutes-raw" class="form-control" rows="5" placeholder="Ví dụ: - Chủ tịch kết luận: Đồng ý chủ trương sửa đường Thôn 2. Giao Địa chính lập dự toán trước 20/07. - Ý kiến Công an: Cần tăng cường tuần tra đêm. - Diễn biến: 100% cán bộ nhất trí thông qua kế hoạch..."></textarea>
-        </div>
-        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
-          <button type="button" id="btn-ai-generate-minutes" class="btn btn-vibrant btn-sm">
-            <i class="fa-solid fa-gears"></i> Biên soạn kết luận bằng AI
-          </button>
-        </div>
-        
-        <div id="ai-minutes-result-container" class="hidden">
-          <label><strong>Văn bản dự thảo Kết luận cuộc họp (Định dạng chuẩn):</strong></label>
-          <div id="ai-minutes-result-box" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; font-family: 'Times New Roman', Times, serif; font-size: 1.05rem; line-height: 1.5; color: #0F172A; max-height: 300px; overflow-y: auto; white-space: pre-wrap; text-align: left; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
-            <!-- Content from AI -->
-          </div>
-          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
-            <button type="button" id="btn-copy-ai-minutes" class="btn btn-outline btn-sm">
-              <i class="fa-solid fa-copy"></i> Sao chép văn bản kết luận
-            </button>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline" data-close="modal-ai-minutes">Đóng</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Application Logic Scripts -->
-  <script src="data.js?v=4.4.0"></script>
-  <script src="app.js?v=4.4.0"></script>
+  <script src="data.js?v=5.0.0"></script>
+  <script src="app.js?v=5.0.0"></script>
   <script>
     (function() {
       function runAdminDirect() {
@@ -880,7 +792,7 @@
               });
               btnAdmin.innerHTML = '<i class="fa-solid fa-unlock" style="color: #6EE7B7;"></i> <span>Chế độ Quản trị ✓</span>';
               btnAdmin.classList.add('active');
-              alert('Đã kích hoạt Chế độ Quản trị hệ thống! Bạn có thể Thêm mới, Chỉnh sửa, Xóa và Biên soạn biên bản AI.');
+              alert('Đã kích hoạt Chế độ Quản trị hệ thống! Bạn có thể Thêm mới, Chỉnh sửa, Xóa và quản lý lịch họp.');
             } else {
               window.isAdminMode = false;
               sessionStorage.removeItem('admin_password');
@@ -906,7 +818,7 @@
           };
         }
 
-        // Gán sự kiện mở modal Cấu hình & API Deepseek
+        // Gán sự kiện mở modal Cấu hình hệ thống
         const openSettingsModal = function() {
           const modal = document.getElementById('modal-settings');
           if (modal) modal.classList.add('active');
