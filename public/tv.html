@@ -67,7 +67,7 @@
     }
 
     .tv-brand h2 {
-      font-size: clamp(24px, 2.2vw, 34px);
+      font-size: clamp(20px, 2.2vw, 34px);
       font-weight: 900;
       color: #FFFFFF;
       text-transform: uppercase;
@@ -77,7 +77,7 @@
     }
 
     .tv-subbrand {
-      font-size: clamp(14px, 1.1vw, 18px);
+      font-size: clamp(13px, 1.1vw, 18px);
       font-weight: 700;
       color: #E0F2FE; /* Chữ trắng xanh nước biển sáng */
       letter-spacing: 1.5px;
@@ -91,7 +91,7 @@
     }
 
     #tv-date {
-      font-size: clamp(18px, 1.4vw, 24px);
+      font-size: clamp(16px, 1.4vw, 24px);
       font-weight: 700;
       color: #BAE6FD;
       text-transform: uppercase;
@@ -99,7 +99,7 @@
     }
 
     #tv-time {
-      font-size: clamp(52px, 4.2vw, 68px);
+      font-size: clamp(44px, 4.2vw, 68px);
       font-weight: 900;
       color: #FFFFFF;
       font-feature-settings: "tnum";
@@ -132,18 +132,31 @@
 
     /* Tiêu đề mục to rõ rực rỡ */
     .tv-section-title {
-      font-size: clamp(24px, 1.8vw, 30px);
+      font-size: clamp(20px, 1.8vw, 30px);
       font-weight: 900;
       color: #0369A1; /* Màu xanh nước biển đậm */
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       text-transform: uppercase;
       border-left: 8px solid #0284C7;
       padding-left: 14px;
       letter-spacing: 0.5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tv-page-badge {
+      font-size: clamp(13px, 1vw, 16px);
+      font-weight: 700;
+      background: #0284C7;
+      color: #FFFFFF;
+      padding: 4px 12px;
+      border-radius: 999px;
+      letter-spacing: 0.5px;
     }
 
     .tv-section-title-small {
-      font-size: clamp(18px, 1.3vw, 22px);
+      font-size: clamp(16px, 1.3vw, 22px);
       font-weight: 900;
       color: #0369A1;
       margin-bottom: 12px;
@@ -157,26 +170,29 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
       overflow: hidden;
     }
 
-    /* Card cuộc họp Trắng tinh tế nổi bật trên nền xanh */
+    /* Card cuộc họp - CHỐNG TRÀN CHỮ VÀ DÙNG FLEX-SHRINK: 0 */
     .tv-timeline-item {
       display: flex;
       align-items: center;
-      padding: 18px 26px;
+      padding: 16px 22px;
       background: #FFFFFF;
       border-radius: 18px;
       border: 1px solid #E0F2FE;
-      box-shadow: 0 6px 18px -2px rgba(2, 132, 199, 0.08);
-      min-height: 90px;
+      box-shadow: 0 4px 14px -2px rgba(2, 132, 199, 0.08);
+      min-height: 80px;
+      flex-shrink: 0;
       position: relative;
+      overflow: hidden;
+      box-sizing: border-box;
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
     .tv-timeline-item.completed {
-      opacity: 0.55;
+      opacity: 0.6;
       background: #F8FAFC;
     }
 
@@ -197,12 +213,13 @@
       border-bottom-left-radius: 18px;
     }
 
-    /* Giờ họp Font Size To Rõ */
+    /* Giờ họp Font Size Clamp */
     .tv-item-time {
-      flex: 0 0 120px;
-      font-size: clamp(26px, 2vw, 32px);
+      flex: 0 0 115px;
+      font-size: clamp(22px, 2.4vw, 44px);
       font-weight: 900;
-      color: #0284C7; /* Xanh nước biển */
+      color: #0284C7;
+      line-height: 1;
     }
 
     .tv-timeline-item.ongoing .tv-item-time {
@@ -211,17 +228,22 @@
 
     .tv-item-body {
       flex: 1;
-      padding-left: 20px;
+      padding-left: 18px;
       min-width: 0;
     }
 
-    /* Tiêu đề cuộc họp Font Size To Rõ */
+    /* Tiêu đề cuộc họp GIỚI HẠN TỐI ĐA 2 DÒNG */
     .tv-item-title {
-      font-size: clamp(20px, 1.6vw, 25px);
+      font-size: clamp(16px, 1.6vw, 30px);
       font-weight: 800;
       color: #0F172A;
-      margin-bottom: 8px;
-      line-height: 1.35;
+      margin-bottom: 6px;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
       overflow-wrap: anywhere;
       word-break: break-word;
     }
@@ -232,22 +254,25 @@
     }
 
     .tv-item-desc {
-      font-size: clamp(16px, 1.2vw, 19px);
+      font-size: clamp(13px, 1.1vw, 17px);
       color: #475569;
       display: flex;
       flex-wrap: wrap;
-      gap: 18px;
+      gap: 14px;
+      line-height: 1.3;
     }
 
     .tv-item-meta {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     .tv-item-meta i {
       color: #0284C7;
-      font-size: 1.1rem;
+      font-size: 1rem;
     }
 
     .tv-item-meta strong {
@@ -256,22 +281,22 @@
     }
 
     .tv-item-status {
-      flex: 0 0 190px;
+      flex: 0 0 170px;
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 16px;
+      gap: 12px;
     }
 
     /* Nhãn trạng thái */
     .tv-badge {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      font-size: clamp(14px, 1vw, 17px);
+      gap: 6px;
+      font-size: clamp(13px, 0.9vw, 16px);
       font-weight: 800;
-      padding: 8px 14px;
-      border-radius: 10px;
+      padding: 6px 12px;
+      border-radius: 8px;
       text-transform: uppercase;
       white-space: nowrap;
     }
@@ -301,8 +326,8 @@
 
     /* Khung mã QR Code */
     .tv-item-qr-small {
-      width: 58px;
-      height: 58px;
+      width: 52px;
+      height: 52px;
       background: white;
       border: 2px solid #BAE6FD;
       padding: 4px;
@@ -316,65 +341,68 @@
       height: 100%;
     }
 
-    /* HERO CARD: TIẾP THEO (Tông Xanh Nước Biển Hoàng Gia Sang Trọng) */
+    /* HERO CARD: TIẾP THEO */
     .tv-next-hero-card {
       background: linear-gradient(135deg, #0284C7 0%, #0369A1 60%, #1E3A8A 100%);
       color: #FFFFFF;
       border-radius: 22px;
-      padding: 26px;
+      padding: 24px;
       box-shadow: 0 12px 30px -4px rgba(2, 132, 199, 0.3);
       display: flex;
       flex-direction: column;
       align-items: stretch;
       justify-content: center;
       flex: 1.2;
-      min-height: 260px;
+      min-height: 240px;
       position: relative;
       overflow: hidden;
     }
 
     .tv-hero-label {
-      font-size: clamp(16px, 1.2vw, 20px);
+      font-size: clamp(14px, 1.1vw, 18px);
       font-weight: 900;
       color: #BAE6FD;
       text-align: center;
       text-transform: uppercase;
       letter-spacing: 2px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .tv-hero-time {
-      font-size: clamp(48px, 3.8vw, 62px);
+      font-size: clamp(40px, 3.5vw, 56px);
       font-weight: 900;
       color: #FFFFFF;
       text-align: center;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       text-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
 
     .tv-hero-title {
-      font-size: clamp(24px, 1.8vw, 28px);
+      font-size: clamp(18px, 1.5vw, 24px);
       font-weight: 800;
       color: #FFFFFF;
       text-align: center;
-      line-height: 1.35;
-      margin-bottom: 16px;
+      line-height: 1.3;
+      margin-bottom: 14px;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      text-overflow: ellipsis;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     .tv-hero-meta {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .tv-hero-meta-item {
-      font-size: clamp(16px, 1.2vw, 19px);
+      font-size: clamp(14px, 1.1vw, 17px);
       color: #E0F2FE;
       display: flex;
       align-items: center;
@@ -387,17 +415,17 @@
     }
 
     .tv-hero-countdown {
-      font-size: clamp(18px, 1.3vw, 22px);
+      font-size: clamp(16px, 1.2vw, 20px);
       font-weight: 900;
       text-align: center;
       text-transform: uppercase;
-      padding: 10px 20px;
+      padding: 8px 16px;
       border-radius: 12px;
       margin-top: auto;
       background: rgba(255, 255, 255, 0.15);
       backdrop-filter: blur(8px);
       border: 1px solid rgba(255, 255, 255, 0.3);
-      color: #FDE047; /* Chữ màu Vàng Hoàng Gia nổi bật trên nền xanh */
+      color: #FDE047;
       letter-spacing: 0.5px;
     }
 
@@ -418,7 +446,7 @@
     .tv-tomorrow-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       flex: 1;
       overflow: hidden;
     }
@@ -426,29 +454,29 @@
     .tv-tomorrow-item {
       display: flex;
       align-items: flex-start;
-      padding: 14px 18px;
+      padding: 12px 16px;
       background: #FFFFFF;
       border-radius: 16px;
       border: 1px solid #E0F2FE;
       box-shadow: 0 4px 12px rgba(2, 132, 199, 0.05);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .tv-tomorrow-time {
-      flex: 0 0 70px;
-      font-size: clamp(18px, 1.3vw, 22px);
+      flex: 0 0 65px;
+      font-size: clamp(16px, 1.2vw, 20px);
       font-weight: 900;
       color: #0284C7;
       padding-top: 2px;
     }
 
     .tv-tomorrow-title {
-      font-size: clamp(16px, 1.15vw, 19px);
+      font-size: clamp(14px, 1vw, 17px);
       font-weight: 800;
       color: #0F172A;
-      white-space: normal !important;
-      word-break: break-word;
       line-height: 1.35;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     /* Footer Chân Trang Xanh Nước Biển */
@@ -465,7 +493,7 @@
     }
 
     .tv-footer-left {
-      font-size: clamp(16px, 1.2vw, 20px);
+      font-size: clamp(14px, 1.1vw, 18px);
       color: #1E293B;
       font-weight: 700;
       display: flex;
@@ -474,6 +502,8 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      flex: 1;
+      min-width: 0;
     }
 
     .tv-footer-tag {
@@ -483,9 +513,10 @@
     }
 
     .tv-footer-right {
-      font-size: clamp(15px, 1.1vw, 18px);
+      font-size: clamp(14px, 1vw, 17px);
       font-weight: 800;
       color: #0284C7;
+      flex-shrink: 0;
     }
 
     .tv-footer-right.offline {
@@ -501,6 +532,138 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
     .btn-tv-fullscreen:hover { opacity: 1; background: #0369A1; }
+
+    /* ==========================================================================
+       RESPONSIVE BREAKPOINTS (MOBILE PORTRAIT <= 768px & TABLET 769-1024px)
+       ========================================================================== */
+    @media (max-width: 768px) {
+      body, html {
+        overflow-y: auto !important;
+        height: auto !important;
+      }
+
+      #tv-mode-container {
+        height: auto !important;
+        min-height: 100vh;
+        overflow-y: auto !important;
+        padding: 12px 14px !important;
+      }
+
+      .tv-header {
+        height: auto !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+        padding: 14px 18px !important;
+      }
+
+      .tv-brand h2 {
+        font-size: clamp(18px, 5vw, 24px) !important;
+      }
+
+      .tv-subbrand {
+        font-size: 13px !important;
+      }
+
+      .tv-clock-area {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      #tv-time {
+        font-size: clamp(36px, 9vw, 48px) !important;
+      }
+
+      #tv-date {
+        font-size: 14px !important;
+      }
+
+      .tv-body-lr {
+        flex-direction: column !important;
+        height: auto !important;
+        overflow: visible !important;
+        gap: 20px !important;
+      }
+
+      .tv-left-today, .tv-right-upcoming {
+        flex: none !important;
+        width: 100% !important;
+        overflow: visible !important;
+      }
+
+      .tv-today-timeline {
+        overflow: visible !important;
+      }
+
+      /* ĐIỆN THOẠI DOC: CỘT GIỜ CHUYỂN LÊN TRÊN TIÊU ĐỀ */
+      .tv-timeline-item {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+        padding: 14px 16px !important;
+        min-height: auto !important;
+      }
+
+      .tv-item-time {
+        flex: none !important;
+        font-size: clamp(20px, 5vw, 26px) !important;
+        margin-bottom: 2px;
+      }
+
+      .tv-item-body {
+        padding-left: 0 !important;
+        width: 100%;
+      }
+
+      .tv-item-title {
+        font-size: clamp(15px, 4vw, 18px) !important;
+        -webkit-line-clamp: 3 !important;
+      }
+
+      .tv-item-status {
+        flex: none !important;
+        width: 100%;
+        justify-content: space-between !important;
+        margin-top: 4px;
+      }
+
+      .tv-footer {
+        height: auto !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+        padding: 12px 16px !important;
+      }
+
+      .tv-footer-left {
+        white-space: normal !important;
+        word-break: break-word !important;
+      }
+
+      .tv-footer-right {
+        width: 100%;
+        text-align: right;
+      }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      #tv-mode-container {
+        padding: 16px 20px;
+      }
+
+      .tv-body-lr {
+        gap: 16px;
+      }
+
+      .tv-item-time {
+        flex: 0 0 95px;
+        font-size: clamp(20px, 2.2vw, 28px);
+      }
+
+      .tv-item-title {
+        font-size: clamp(16px, 1.5vw, 22px);
+      }
+    }
   </style>
 </head>
 <body>
@@ -525,7 +688,10 @@
 
     <div class="tv-body-lr">
       <div class="tv-left-today">
-        <div class="tv-section-title">LỊCH CÔNG TÁC HÔM NAY</div>
+        <div class="tv-section-title">
+          <span>LỊCH CÔNG TÁC HÔM NAY</span>
+          <span id="tv-page-indicator" class="tv-page-badge" style="display: none;">Trang 1/1</span>
+        </div>
         <div id="tv-events-list" class="tv-today-timeline"></div>
       </div>
       
@@ -675,6 +841,12 @@
       ];
     }
 
+    let tvTodayEvents = [];
+    let tvRemainingEvents = [];
+    let tvCurrentPage = 0;
+    let tvPageInterval = null;
+    const TV_PAGE_SIZE = 4; // Tối đa 4 sự kiện/trang trên TV landscape để tuyệt đối không tràn/ép chữ
+
     async function loadTVData() {
       const syncStatusEl = document.getElementById('tv-sync-status');
       const today = new Date();
@@ -734,19 +906,35 @@
         remainingEvents = fallback.filter(evt => evt.start_time.split(' ')[0] > todayStr);
       }
 
-      renderTVGrid(todayEvents);
-      renderTVUpcomingGrid(remainingEvents, todayEvents);
+      tvTodayEvents = todayEvents;
+      tvRemainingEvents = remainingEvents;
+
+      renderTVGrid(tvTodayEvents);
+      renderTVUpcomingGrid(tvRemainingEvents, tvTodayEvents);
+
+      if (!tvPageInterval) {
+        tvPageInterval = setInterval(() => {
+          const isMobile = window.innerWidth <= 768;
+          if (!isMobile && tvTodayEvents && tvTodayEvents.length > TV_PAGE_SIZE) {
+            const totalPages = Math.ceil(tvTodayEvents.length / TV_PAGE_SIZE);
+            tvCurrentPage = (tvCurrentPage + 1) % totalPages;
+            renderTVGrid(tvTodayEvents);
+          }
+        }, 15000); // Tự động lật trang mỗi 15 giây
+      }
     }
 
     function renderTVGrid(todayEvents) {
       const container = document.getElementById('tv-events-list');
+      const pageBadge = document.getElementById('tv-page-indicator');
       container.innerHTML = '';
 
-      if (todayEvents.length === 0) {
+      if (!todayEvents || todayEvents.length === 0) {
+        if (pageBadge) pageBadge.style.display = 'none';
         container.innerHTML = `
           <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #FFFFFF; border-radius: 20px; border: 2px dashed #BAE6FD; width: 100%;">
             <i class="fa-solid fa-calendar-xmark" style="font-size: 4rem; color: #0284C7; margin-bottom: 16px;"></i>
-            <h4 style="font-size: 26px; font-weight: 900; color: #0369A1; margin-bottom: 8px;">Không có lịch công tác hôm nay</h4>
+            <h4 style="font-size: 24px; font-weight: 900; color: #0369A1; margin-bottom: 8px;">Không có lịch công tác hôm nay</h4>
             <p style="font-size: 19px; color: #64748B;">Lịch làm việc sẽ được cập nhật tự động trực tuyến.</p>
           </div>
         `;
@@ -767,16 +955,29 @@
         }
       });
 
-      let focusIndex = todayEvents.findIndex(evt => evt.tvStatus === 'ongoing' || evt.tvStatus === 'upcoming' || evt.tvStatus === 'upcoming-near');
-      if (focusIndex === -1) focusIndex = todayEvents.length - 1;
+      const isMobile = window.innerWidth <= 768;
+      const totalPages = Math.ceil(todayEvents.length / TV_PAGE_SIZE) || 1;
 
-      const startIndex = Math.max(0, focusIndex - 2);
-      const slicedEvents = todayEvents.slice(startIndex, startIndex + 6);
+      if (tvCurrentPage >= totalPages) tvCurrentPage = 0;
 
-      slicedEvents.forEach(evt => {
+      // Trên Mobile: Hiển thị tất cả lịch hôm nay và cho cuộn dọc. Trên TV: Phân trang tự động.
+      const eventsToRender = isMobile 
+        ? todayEvents 
+        : todayEvents.slice(tvCurrentPage * TV_PAGE_SIZE, (tvCurrentPage + 1) * TV_PAGE_SIZE);
+
+      if (pageBadge) {
+        if (!isMobile && totalPages > 1) {
+          pageBadge.textContent = `Trang ${tvCurrentPage + 1}/${totalPages}`;
+          pageBadge.style.display = 'inline-block';
+        } else {
+          pageBadge.style.display = 'none';
+        }
+      }
+
+      eventsToRender.forEach(evt => {
         const card = document.createElement('div');
         card.className = `tv-timeline-item ${evt.tvStatus}`;
-        const startTimeStr = evt.start_time.split(' ')[1];
+        const startTimeStr = evt.start_time.split(' ')[1] || '00:00';
         
         let statusHtml = '';
         if (evt.tvStatus === 'completed') statusHtml = `<span class="tv-badge completed"><i class="fa-solid fa-check"></i> Đã kết thúc</span>`;
@@ -792,7 +993,7 @@
         card.innerHTML = `
           <div class="tv-item-time">${startTimeStr}</div>
           <div class="tv-item-body">
-            <div class="tv-item-title">${evt.title}</div>
+            <div class="tv-item-title" title="${evt.title}">${evt.title}</div>
             <div class="tv-item-desc">${metaHtml}</div>
           </div>
           <div class="tv-item-status">${statusHtml}${qrHtml}</div>
@@ -823,7 +1024,7 @@
           heroContainer.innerHTML = `
             <div class="tv-hero-label">${heroEvent.tvStatus === 'ongoing' ? 'ĐANG DIỄN RA' : 'TIẾP THEO'}</div>
             <div class="tv-hero-time">${startTimeStr}</div>
-            <div class="tv-hero-title">${heroEvent.title}</div>
+            <div class="tv-hero-title" title="${heroEvent.title}">${heroEvent.title}</div>
             <div class="tv-hero-meta">
               <div class="tv-hero-meta-item"><i class="fa-solid fa-location-dot"></i><span>${heroEvent.location || 'Phòng họp UBND'}</span></div>
               ${cleanChair ? `<div class="tv-hero-meta-item"><i class="fa-solid fa-user-tie"></i><span>Chủ trì: ${cleanChair}</span></div>` : ''}
@@ -870,7 +1071,7 @@
             item.innerHTML = `
               <div class="tv-tomorrow-time">${evt.start_time.split(' ')[1]}</div>
               <div class="tv-tomorrow-info" style="flex: 1; padding-left: 12px; display: flex; flex-direction: column; gap: 4px;">
-                <div class="tv-tomorrow-title">${evt.title}</div>
+                <div class="tv-tomorrow-title" title="${evt.title}">${evt.title}</div>
                 ${metaHtml ? `<div class="tv-tomorrow-meta" style="font-size: clamp(13px, 0.95vw, 15px); line-height: 1.3;">${metaHtml}</div>` : ''}
               </div>
             `;
@@ -879,6 +1080,12 @@
         }
       }
     }
+
+    window.addEventListener('resize', () => {
+      if (tvTodayEvents && tvTodayEvents.length > 0) {
+        renderTVGrid(tvTodayEvents);
+      }
+    });
 
     loadTVData();
     setInterval(loadTVData, 30000);
