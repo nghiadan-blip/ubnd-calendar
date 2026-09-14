@@ -4,6 +4,7 @@
   "description": "Hệ thống quản lý lịch làm việc UBND Xã kết nối SQL và TV Kiosk Mode",
   "main": "server.js",
   "scripts": {
+    "test": "node tests/app.test.js",
     "init-db": "node init_db.js",
     "dev": "node server.js"
   },

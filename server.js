@@ -3,19 +3,22 @@ const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const dbPath = path.join(__dirname, 'database.sqlite');
+const dbPath = process.env.TEST_DB_PATH || path.join(__dirname, 'database.sqlite');
+
+// Tắt header X-Powered-By
+app.disable('x-powered-by');
 
 // Kết nối tới CSDL SQLite
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Lỗi khi kết nối database:', err.message);
   } else {
-    console.log('Server đã kết nối thành công tới SQLite database.');
+    console.log(`Server đã kết nối thành công tới SQLite database (${path.basename(dbPath)}).`);
     db.run(`
       CREATE TABLE IF NOT EXISTS events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,174 +35,254 @@ const db = new sqlite3.Database(dbPath, (err) => {
         gcal_id TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
-    `, (err) => {
-      if (err) {
-        console.error('Lỗi khởi tạo bảng events:', err.message);
+    `, (initErr) => {
+      if (initErr) {
+        console.error('Lỗi khởi tạo bảng events:', initErr.message);
       } else {
         console.log('Đã đảm bảo khởi tạo bảng events trong SQLite database.');
         db.run("ALTER TABLE events ADD COLUMN gcal_id TEXT", () => {});
-
-        // Nạp dữ liệu mẫu ban đầu nếu cơ sở dữ liệu hoàn toàn trống
-        db.get("SELECT COUNT(*) AS count FROM events", (countErr, row) => {
-          if (!countErr && row && row.count === 0) {
-            console.log("Database rỗng, đang nạp dữ liệu lịch làm việc ban đầu...");
-            const now = new Date();
-            const currentDay = now.getDay();
-            const distToMon = currentDay === 0 ? -6 : 1 - currentDay;
-            const mon = new Date(now); mon.setDate(now.getDate() + distToMon);
-            const tue = new Date(mon); tue.setDate(mon.getDate() + 1);
-            const wed = new Date(mon); wed.setDate(mon.getDate() + 2);
-            const thu = new Date(mon); thu.setDate(mon.getDate() + 3);
-            const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
-
-            const fmt = (d, t) => {
-              const yyyy = d.getFullYear();
-              const mm = String(d.getMonth() + 1).padStart(2, '0');
-              const dd = String(d.getDate()).padStart(2, '0');
-              return `${yyyy}-${mm}-${dd} ${t}`;
-            };
-
-            const seedEvents = [
-              {
-                title: 'Chào cờ đầu tuần và Họp giao ban Thường trực Đảng ủy, HĐND, UBND xã',
-                start_time: fmt(mon, '07:30'), end_time: fmt(mon, '11:30'),
-                chairperson: 'Đ/c Nguyễn Hùng Cường - Chủ tịch UBND xã',
-                location: 'Phòng họp tầng 2',
-                attendees: 'Thường trực Đảng ủy, HĐND, UBND, Trưởng công an xã',
-                preparing_unit: 'Văn phòng UBND', category: 'dang_uy', status: 'completed'
-              },
-              {
-                title: 'Ký duyệt hồ sơ đất đai và giải quyết thủ tục hành chính tại bộ phận Một cửa',
-                start_time: fmt(mon, '14:00'), end_time: fmt(mon, '17:00'),
-                chairperson: 'Đ/c Lô Xuân Du - Phó Chủ tịch UBND xã',
-                location: 'Bộ phận Tiếp nhận và Trả kết quả (Một cửa)',
-                attendees: 'Công chức Địa chính - Xây dựng',
-                preparing_unit: 'Bộ phận Một cửa', category: 'ubnd', status: 'completed'
-              },
-              {
-                title: 'Tổ chức Hội nghị đối thoại trực tiếp giữa Người đứng đầu cấp ủy với nhân dân',
-                start_time: fmt(tue, '08:00'), end_time: fmt(tue, '11:30'),
-                chairperson: 'Bí thư Đảng ủy & Chủ tịch UBND xã',
-                location: 'Hội trường lớn UBND xã',
-                attendees: 'Toàn thể cán bộ công chức, Trưởng các ngành đoàn thể',
-                preparing_unit: 'Văn phòng Đảng ủy', category: 'dang_uy', status: 'completed'
-              },
-              {
-                title: 'Giao ban lãnh đạo UBND xã',
-                start_time: fmt(wed, '07:30'), end_time: fmt(wed, '08:30'),
-                chairperson: 'Chủ tịch UBND xã',
-                location: 'Phòng họp UBND xã',
-                attendees: 'Lãnh đạo UBND xã & Chuyên viên',
-                preparing_unit: 'Văn phòng UBND', category: 'ubnd', status: 'ongoing'
-              },
-              {
-                title: 'Làm việc với Phòng Kinh tế về Đất đai, Ngân sách và Đầu tư công',
-                start_time: fmt(wed, '15:30'), end_time: fmt(wed, '16:45'),
-                chairperson: 'Chủ tịch UBND xã',
-                location: 'Phòng họp UBND xã',
-                attendees: 'Phòng Kinh tế và bộ phận chuyên môn',
-                preparing_unit: 'Phòng Kinh tế', category: 'ubnd', status: 'scheduled'
-              },
-              {
-                title: 'Lịch Tiếp công dân định kỳ của Chủ tịch UBND xã',
-                start_time: fmt(thu, '08:00'), end_time: fmt(thu, '11:30'),
-                chairperson: 'Đ/c Nguyễn Hùng Cường - Chủ tịch UBND xã',
-                location: 'Phòng Tiếp công dân UBND xã',
-                attendees: 'Công chức Tư pháp, Địa chính, Thanh tra',
-                preparing_unit: 'Bộ phận Tiếp công dân', category: 'tiep_dan', status: 'scheduled'
-              },
-              {
-                title: 'Kiểm tra thực địa tiến độ thi công bê tông hóa đường giao thông',
-                start_time: fmt(fri, '08:00'), end_time: fmt(fri, '11:30'),
-                chairperson: 'Đ/c Nguyễn Huy Anh - Phó Chủ tịch UBND xã',
-                location: 'Hiện trường thi công Thôn 3',
-                attendees: 'Ban Giám sát đầu tư cộng đồng, Trưởng thôn 3',
-                preparing_unit: 'Ban Chỉ đạo giao thông xã', category: 'thuc_dia', status: 'scheduled'
-              }
-            ];
-
-            const stmt = db.prepare(`
-              INSERT INTO events (title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `);
-            seedEvents.forEach(e => {
-              stmt.run([e.title, e.start_time, e.end_time, e.chairperson, e.location, e.attendees, e.preparing_unit, e.category, e.status]);
-            });
-            stmt.finalize();
-            console.log("Đã nạp tự động 7 lịch công tác mẫu vào cơ sở dữ liệu SQLite.");
-          }
-        });
       }
     });
   }
 });
 
-// Middleware
-app.use(cors());
+// Middleware Security Headers & Strict Same-Origin CORS
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:; font-src 'self';");
+  next();
+});
+
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+
 app.use(express.json({
+  limit: '1mb',
   verify: (req, res, buf) => {
     req.rawBody = buf;
   }
 }));
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/lich', express.static(path.join(__dirname, 'public')));
 
-// Cấu hình mật khẩu quản trị (Mặc định: NghiaLam@2026, có thể thay đổi bằng biến môi trường)
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'NghiaLam@2026';
+// ----------------------------------------------------
+// NGUYÊN TẮC AN TOÀN VÀ XÁC THỰC QUẢN TRỊ (FAIL-CLOSED)
+// ----------------------------------------------------
 
-// Middleware xác thực quyền quản trị cho các API thay đổi dữ liệu
-function requireAuth(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  if (!authHeader) {
-    // Cho phép thực thi mặc định nếu đang gọi từ trang quản trị
-    return next();
+// Đọc mật khẩu quản trị từ biến môi trường hoặc file settings.json
+function getAdminPassword() {
+  if (process.env.ADMIN_PASSWORD) {
+    return process.env.ADMIN_PASSWORD;
   }
-  const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
-  if (!token || token === ADMIN_PASSWORD || token === 'NghiaLam@2026' || token === 'null' || token === 'undefined') {
-    next();
-  } else {
-    next(); // Linh hoạt cho phép cập nhật lịch công tác từ giao diện admin
+  const settingsPath = path.join(__dirname, 'settings.json');
+  if (fs.existsSync(settingsPath)) {
+    try {
+      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      if (settings.adminPassword) return settings.adminPassword;
+    } catch (e) {}
   }
+  return null;
 }
 
-// Endpoint kiểm tra đăng nhập quản trị
-app.post('/api/auth/login', (req, res) => {
-  const { password } = req.body;
-  if (!password || password === ADMIN_PASSWORD || password === 'NghiaLam@2026') {
-    res.json({ success: true, token: 'NghiaLam@2026', message: 'Đăng nhập thành công!' });
-  } else {
-    res.json({ success: true, token: 'NghiaLam@2026', message: 'Đăng nhập thành công!' });
+// Đọc secret webhook
+function getWebhookSecret() {
+  if (process.env.GITHUB_WEBHOOK_SECRET) {
+    return process.env.GITHUB_WEBHOOK_SECRET;
   }
+  const settingsPath = path.join(__dirname, 'settings.json');
+  if (fs.existsSync(settingsPath)) {
+    try {
+      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      if (settings.webhookSecret) return settings.webhookSecret;
+    } catch (e) {}
+  }
+  return null;
+}
+
+// Lưu trữ các token phiên làm việc active trong bộ nhớ (hạn 24h)
+const activeSessions = new Map();
+
+function cleanExpiredSessions() {
+  const now = Date.now();
+  for (const [token, session] of activeSessions.entries()) {
+    if (session.expiresAt < now) {
+      activeSessions.delete(token);
+    }
+  }
+}
+setInterval(cleanExpiredSessions, 3600000);
+
+// Rate limiting cho đăng nhập (tối đa 5 lần thử sai trong 1 phút per IP)
+const loginAttempts = new Map();
+function isRateLimited(ip) {
+  const now = Date.now();
+  const attempts = loginAttempts.get(ip) || [];
+  const recent = attempts.filter(t => now - t < 60000);
+  loginAttempts.set(ip, recent);
+  return recent.length >= 5;
+}
+function recordFailedAttempt(ip) {
+  const attempts = loginAttempts.get(ip) || [];
+  attempts.push(Date.now());
+  loginAttempts.set(ip, attempts);
+}
+
+// Middleware xác thực quyền quản trị (Fail-Closed)
+function requireAuth(req, res, next) {
+  const adminPassword = getAdminPassword();
+  if (!adminPassword) {
+    return res.status(401).json({
+      error: 'Chưa cấu hình mật khẩu quản trị (ADMIN_PASSWORD). Vui lòng cấu hình biến môi trường ADMIN_PASSWORD hoặc cài đặt trong settings.json.'
+    });
+  }
+
+  const authHeader = req.headers['authorization'];
+  let token = null;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7);
+  } else if (req.headers['x-admin-token']) {
+    token = req.headers['x-admin-token'];
+  }
+
+  if (!token) {
+    return res.status(401).json({ error: 'Yêu cầu xác thực. Vui lòng đăng nhập tài khoản quản trị.' });
+  }
+
+  const session = activeSessions.get(token);
+  if (!session || session.expiresAt < Date.now()) {
+    if (session) activeSessions.delete(token);
+    return res.status(401).json({ error: 'Phiên làm việc đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.' });
+  }
+
+  req.adminSession = session;
+  next();
+}
+
+// Endpoint đăng nhập quản trị (POST /api/auth/login)
+app.post('/api/auth/login', (req, res) => {
+  const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
+
+  if (isRateLimited(clientIp)) {
+    return res.status(429).json({ error: 'Bạn đã nhập sai mật khẩu quá 5 lần. Vui lòng đợi 1 phút trước khi thử lại.' });
+  }
+
+  const adminPassword = getAdminPassword();
+  if (!adminPassword) {
+    return res.status(401).json({ error: 'Máy chủ chưa được cấu hình mật khẩu quản trị (ADMIN_PASSWORD).' });
+  }
+
+  const { password } = req.body || {};
+  if (!password || typeof password !== 'string') {
+    recordFailedAttempt(clientIp);
+    return res.status(401).json({ error: 'Mật khẩu đăng nhập không chính xác.' });
+  }
+
+  const passwordBuf = Buffer.from(password);
+  const targetBuf = Buffer.from(adminPassword);
+
+  if (passwordBuf.length !== targetBuf.length || !crypto.timingSafeEqual(passwordBuf, targetBuf)) {
+    recordFailedAttempt(clientIp);
+    return res.status(401).json({ error: 'Mật khẩu đăng nhập không chính xác.' });
+  }
+
+  // Cấp token phiên ngẫu nhiên an toàn (24 giờ)
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+  activeSessions.set(token, { createdAt: Date.now(), expiresAt, ip: clientIp });
+
+  res.json({
+    success: true,
+    token,
+    expiresAt,
+    message: 'Đăng nhập quản trị thành công!'
+  });
 });
 
-/**
- * Hàm kiểm tra trùng phòng họp / tài nguyên bằng câu lệnh SQL
- * Kiểm tra xem có sự kiện nào khác sử dụng cùng địa điểm và có khoảng thời gian đè lên nhau không.
- */
-function checkConflict(location, startTime, endTime, excludeId = null) {
-  return new Promise((resolve, reject) => {
-    // Không tính các lịch đã hủy (cancelled) hoặc hoãn (postponed)
-    let sql = `
-      SELECT * FROM events 
-      WHERE location = ? 
-      AND status NOT IN ('cancelled', 'postponed')
-      AND NOT (end_time <= ? OR start_time >= ?)
-    `;
-    const params = [location, startTime, endTime];
+// Endpoint đăng xuất (POST /api/auth/logout)
+app.post('/api/auth/logout', requireAuth, (req, res) => {
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    activeSessions.delete(authHeader.substring(7));
+  }
+  res.json({ success: true, message: 'Đã đăng xuất phiên làm việc.' });
+});
 
-    if (excludeId) {
-      sql += ` AND id != ?`;
-      params.push(excludeId);
+// ----------------------------------------------------
+// BẢO VỆ CHỐNG SSRF CHO GOOGLE APPS SCRIPT SYNC
+// ----------------------------------------------------
+function validateGoogleAppsScriptUrl(targetUrl) {
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(targetUrl);
+  } catch (e) {
+    return { valid: false, reason: 'URL không đúng định dạng hợp lệ.' };
+  }
+
+  if (parsedUrl.protocol !== 'https:') {
+    return { valid: false, reason: 'Chỉ chấp nhận kết nối an toàn HTTPS.' };
+  }
+
+  const hostname = parsedUrl.hostname.toLowerCase();
+  const isAllowedHost = hostname === 'script.google.com' ||
+                        hostname === 'script.googleusercontent.com' ||
+                        hostname.endsWith('.google.com') ||
+                        hostname.endsWith('.googleusercontent.com');
+
+  if (!isAllowedHost) {
+    return { valid: false, reason: 'URL Google Apps Script phải thuộc tên miền *.google.com hoặc *.googleusercontent.com.' };
+  }
+
+  // Chặn IP nội bộ / Loopback / Metadata Endpoint
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' ||
+      hostname.startsWith('10.') || hostname.startsWith('192.168.') || hostname.startsWith('169.254.') ||
+      hostname.startsWith('172.16.') || hostname.startsWith('172.17.') || hostname.startsWith('172.31.')) {
+    return { valid: false, reason: 'Không cho phép kết nối tới IP nội bộ hoặc loopback.' };
+  }
+
+  return { valid: true, parsedUrl };
+}
+
+// ----------------------------------------------------
+// SANITIZE & VALIDATION HELPERS FOR EVENTS
+// ----------------------------------------------------
+function sanitizeInput(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).trim();
+}
+
+function validateEventFields(body) {
+  const title = sanitizeInput(body.title);
+  const start_time = sanitizeInput(body.start_time).replace('T', ' ');
+  const end_time = sanitizeInput(body.end_time).replace('T', ' ');
+  const chairperson = sanitizeInput(body.chairperson);
+  const location = sanitizeInput(body.location);
+  const attendees = sanitizeInput(body.attendees);
+  const preparing_unit = sanitizeInput(body.preparing_unit);
+  const category = sanitizeInput(body.category) || 'ubnd';
+  const status = sanitizeInput(body.status) || 'scheduled';
+  let document_link = sanitizeInput(body.document_link);
+
+  if (!title) return { valid: false, error: 'Tiêu đề/Nội dung cuộc họp không được để trống.' };
+  if (title.length > 500) return { valid: false, error: 'Tiêu đề cuộc họp không vượt quá 500 ký tự.' };
+  if (!start_time) return { valid: false, error: 'Thời gian bắt đầu không được để trống.' };
+  if (!end_time) return { valid: false, error: 'Thời gian kết thúc không được để trống.' };
+
+  if (document_link && !document_link.startsWith('https://')) {
+    return { valid: false, error: 'Liên kết tài liệu phải bắt đầu bằng https://' };
+  }
+
+  return {
+    valid: true,
+    data: {
+      title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status, document_link
     }
-
-    db.get(sql, params, (err, row) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(row); // Trả về cuộc họp bị trùng đầu tiên tìm thấy, hoặc undefined nếu không trùng
-      }
-    });
-  });
+  };
 }
 
 // ----------------------------------------------------
@@ -207,7 +290,7 @@ function checkConflict(location, startTime, endTime, excludeId = null) {
 // ----------------------------------------------------
 
 /**
- * 1. Lấy danh sách lịch họp (có hỗ trợ lọc theo khoảng ngày và tìm kiếm)
+ * 1. Lấy danh sách lịch họp (Public)
  * GET /api/events?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&query=xyz
  */
 app.get('/api/events', (req, res) => {
@@ -225,7 +308,7 @@ app.get('/api/events', (req, res) => {
   }
   if (query) {
     sql += ` AND (title LIKE ? OR chairperson LIKE ? OR location LIKE ? OR attendees LIKE ?)`;
-    const searchPattern = `%${query}%`;
+    const searchPattern = `%${sanitizeInput(query)}%`;
     params.push(searchPattern, searchPattern, searchPattern, searchPattern);
   }
 
@@ -233,21 +316,21 @@ app.get('/api/events', (req, res) => {
 
   db.all(sql, params, (err, rows) => {
     if (err) {
-      return res.status(500).json({ error: 'Lỗi truy vấn cơ sở dữ liệu: ' + err.message });
+      return res.status(500).json({ error: 'Lỗi truy vấn cơ sở dữ liệu.' });
     }
     res.json(rows || []);
   });
 });
 
 /**
- * 2. Lấy thông tin một cuộc họp cụ thể
+ * 2. Lấy chi tiết một cuộc họp (Public)
  * GET /api/events/:id
  */
 app.get('/api/events/:id', (req, res) => {
   const { id } = req.params;
   db.get(`SELECT * FROM events WHERE id = ?`, [id], (err, row) => {
     if (err) {
-      return res.status(500).json({ error: 'Lỗi truy vấn cơ sở dữ liệu: ' + err.message });
+      return res.status(500).json({ error: 'Lỗi truy vấn cơ sở dữ liệu.' });
     }
     if (!row) {
       return res.status(404).json({ error: 'Không tìm thấy cuộc họp.' });
@@ -257,132 +340,75 @@ app.get('/api/events/:id', (req, res) => {
 });
 
 /**
- * 3. Tạo lịch họp mới (có kiểm tra trùng phòng họp)
+ * 3. Tạo lịch họp mới (Yêu cầu xác thực Admin)
  * POST /api/events
  */
-app.post('/api/events', requireAuth, async (req, res) => {
-  const {
-    title,
-    start_time,
-    end_time,
-    chairperson,
-    location,
-    attendees,
-    preparing_unit,
-    category,
-    status,
-    document_link
-  } = req.body;
-
-  if (!title || !start_time || !end_time) {
-    return res.status(400).json({ error: 'Thiếu các trường bắt buộc (nội dung, thời gian bắt đầu, thời gian kết thúc).' });
+app.post('/api/events', requireAuth, (req, res) => {
+  const validation = validateEventFields(req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ error: validation.error });
   }
 
-  const cleanStart = String(start_time).replace('T', ' ');
-  const cleanEnd = String(end_time).replace('T', ' ');
+  const { title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status, document_link } = validation.data;
 
-  try {
-    const sql = `
-      INSERT INTO events (title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status, document_link)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-    const values = [
-      title,
-      cleanStart,
-      cleanEnd,
-      chairperson || '',
-      location || '',
-      attendees || '',
-      preparing_unit || '',
-      category || 'ubnd',
-      status || 'scheduled',
-      document_link || ''
-    ];
+  const sql = `
+    INSERT INTO events (title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status, document_link)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+  const values = [title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status, document_link];
 
-    db.run(sql, values, function(err) {
-      if (err) {
-        return res.status(500).json({ error: 'Lỗi khi lưu cuộc họp vào cơ sở dữ liệu: ' + err.message });
-      }
-      res.status(201).json({
-        message: 'Tạo lịch họp thành công!',
-        eventId: this.lastID
-      });
+  db.run(sql, values, function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Lỗi khi lưu cuộc họp vào cơ sở dữ liệu.' });
+    }
+    res.status(201).json({
+      message: 'Tạo lịch họp thành công!',
+      eventId: this.lastID
     });
-  } catch (error) {
-    res.status(500).json({ error: 'Lỗi hệ thống: ' + error.message });
-  }
+  });
 });
 
 /**
- * 4. Cập nhật lịch họp
+ * 4. Cập nhật lịch họp (Yêu cầu xác thực Admin)
  * PUT /api/events/:id
  */
-app.put('/api/events/:id', requireAuth, async (req, res) => {
+app.put('/api/events/:id', requireAuth, (req, res) => {
   const { id } = req.params;
-  const {
-    title,
-    start_time,
-    end_time,
-    chairperson,
-    location,
-    attendees,
-    preparing_unit,
-    category,
-    status,
-    document_link
-  } = req.body;
-
-  if (!title || !start_time || !end_time) {
-    return res.status(400).json({ error: 'Thiếu các trường bắt buộc.' });
+  const validation = validateEventFields(req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ error: validation.error });
   }
 
-  const cleanStart = String(start_time).replace('T', ' ');
-  const cleanEnd = String(end_time).replace('T', ' ');
+  const { title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status, document_link } = validation.data;
 
-  try {
-    const sql = `
-      UPDATE events 
-      SET title = ?, start_time = ?, end_time = ?, chairperson = ?, location = ?, 
-          attendees = ?, preparing_unit = ?, category = ?, status = ?, document_link = ?
-      WHERE id = ?
-    `;
-    const values = [
-      title,
-      cleanStart,
-      cleanEnd,
-      chairperson || '',
-      location || '',
-      attendees || '',
-      preparing_unit || '',
-      category || 'ubnd',
-      status || 'scheduled',
-      document_link || '',
-      id
-    ];
+  const sql = `
+    UPDATE events 
+    SET title = ?, start_time = ?, end_time = ?, chairperson = ?, location = ?, 
+        attendees = ?, preparing_unit = ?, category = ?, status = ?, document_link = ?
+    WHERE id = ?
+  `;
+  const values = [title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status, document_link, id];
 
-    db.run(sql, values, function(err) {
-      if (err) {
-        return res.status(500).json({ error: 'Lỗi khi cập nhật cơ sở dữ liệu: ' + err.message });
-      }
-      if (this.changes === 0) {
-        return res.status(404).json({ error: 'Không tìm thấy cuộc họp để cập nhật.' });
-      }
-      res.json({ message: 'Cập nhật lịch họp thành công!' });
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Lỗi hệ thống: ' + error.message });
-  }
+  db.run(sql, values, function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Lỗi khi cập nhật cơ sở dữ liệu.' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy cuộc họp để cập nhật.' });
+    }
+    res.json({ message: 'Cập nhật lịch họp thành công!' });
+  });
 });
 
 /**
- * 5. Xóa lịch họp
+ * 5. Xóa lịch họp (Yêu cầu xác thực Admin)
  * DELETE /api/events/:id
  */
 app.delete('/api/events/:id', requireAuth, (req, res) => {
   const { id } = req.params;
   db.run(`DELETE FROM events WHERE id = ?`, [id], function(err) {
     if (err) {
-      return res.status(500).json({ error: 'Lỗi khi xóa cuộc họp khỏi cơ sở dữ liệu: ' + err.message });
+      return res.status(500).json({ error: 'Lỗi khi xóa cuộc họp khỏi cơ sở dữ liệu.' });
     }
     if (this.changes === 0) {
       return res.status(404).json({ error: 'Không tìm thấy cuộc họp để xóa.' });
@@ -391,7 +417,7 @@ app.delete('/api/events/:id', requireAuth, (req, res) => {
   });
 });
 
-// Hàm phân tích thông minh ô Mô tả (Description) để tự tách Chủ trì, Địa điểm, Thành phần, Link tài liệu
+// Hàm phân tích ô Description từ Google Calendar
 function parseGcalDescription(desc, defaultLoc) {
   const result = {
     location: defaultLoc || '',
@@ -402,23 +428,18 @@ function parseGcalDescription(desc, defaultLoc) {
   };
 
   if (!desc) return result;
-
-  // Lược bỏ thẻ HTML
   const clean = desc.replace(/<[^>]*>/g, ' ').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/\s+/g, ' ');
 
-  // Trích xuất link tài liệu đính kèm
-  const linkMatch = clean.match(/https?:\/\/[^\s<>"]+/i);
+  const linkMatch = clean.match(/https:\/\/[^\s<>"]+/i);
   if (linkMatch) {
     result.document_link = linkMatch[0];
   }
 
-  // Trích xuất Chủ trì
   const chairMatch = clean.match(/(?:Chủ trì|chu tri)\s*[:\s–-]?\s*([^.\n;]+)/i);
   if (chairMatch && chairMatch[1]) {
     result.chairperson = chairMatch[1].trim();
   }
 
-  // Trích xuất Địa điểm nếu chưa có
   if (!result.location) {
     const locMatch = clean.match(/(?:Địa điểm|dia diem|tại|tai)\s*[:\s–-]?\s*([^.\n;]+)/i);
     if (locMatch && locMatch[1]) {
@@ -426,13 +447,11 @@ function parseGcalDescription(desc, defaultLoc) {
     }
   }
 
-  // Trích xuất Thành phần
   const attMatch = clean.match(/(?:Thành phần|thanh phan)\s*[:\s–-]?\s*([^.\n;]+)/i);
   if (attMatch && attMatch[1]) {
     result.attendees = attMatch[1].trim();
   }
 
-  // Trích xuất Đơn vị chuẩn bị
   const prepMatch = clean.match(/(?:Đơn vị chuẩn bị|chuẩn bị)\s*[:\s–-]?\s*([^.\n;]+)/i);
   if (prepMatch && prepMatch[1]) {
     result.preparing_unit = prepMatch[1].trim();
@@ -441,10 +460,7 @@ function parseGcalDescription(desc, defaultLoc) {
   return result;
 }
 
-// Tự động bổ sung cột gcal_id vào bảng events nếu chưa tồn tại
-db.run("ALTER TABLE events ADD COLUMN gcal_id TEXT", (err) => {});
-
-// Hàm helper hợp nhất/cập nhật dữ liệu từ Google Calendar vào SQLite database
+// Hàm UPSERT sự kiện Google Calendar
 async function upsertGcalEvents(gcalEvents) {
   if (!Array.isArray(gcalEvents)) return { insertedCount: 0, updatedCount: 0 };
   let insertedCount = 0;
@@ -453,17 +469,16 @@ async function upsertGcalEvents(gcalEvents) {
   for (const gEvt of gcalEvents) {
     if (!gEvt || !gEvt.title || !gEvt.start_time) continue;
     const gcalId = gEvt.gcal_id || gEvt.google_event_id || gEvt.id || '';
-    const start = gEvt.start_time.replace('T', ' ');
-    const end = (gEvt.end_time || gEvt.start_time).replace('T', ' ');
+    const start = String(gEvt.start_time).replace('T', ' ');
+    const end = String(gEvt.end_time || gEvt.start_time).replace('T', ' ');
 
     const descInfo = parseGcalDescription(gEvt.description, gEvt.location);
     const finalChair = gEvt.chairperson || descInfo.chairperson || 'Lãnh đạo UBND xã';
     const finalLoc = gEvt.location || descInfo.location || 'Phòng họp UBND xã';
     const finalAtt = gEvt.attendees || descInfo.attendees || '';
     const finalPrep = gEvt.preparing_unit || descInfo.preparing_unit || '';
-    const finalDoc = gEvt.document_link || descInfo.document_link || '';
+    const finalDoc = (gEvt.document_link && gEvt.document_link.startsWith('https://')) ? gEvt.document_link : descInfo.document_link;
 
-    // Tìm kiếm cuộc họp đã tồn tại theo gcal_id hoặc (title + start_time)
     let existingRow = null;
     if (gcalId) {
       existingRow = await new Promise((resolve) => {
@@ -477,7 +492,6 @@ async function upsertGcalEvents(gcalEvents) {
     }
 
     if (existingRow) {
-      // Cập nhật toàn bộ thông tin mới nhất (kể cả khi đổi tiêu đề hay giờ họp)
       await new Promise((resolve, reject) => {
         const sql = `
           UPDATE events 
@@ -485,18 +499,8 @@ async function upsertGcalEvents(gcalEvents) {
           WHERE id = ?
         `;
         const values = [
-          gEvt.title,
-          start,
-          end,
-          finalChair,
-          finalLoc,
-          finalAtt,
-          finalPrep,
-          gEvt.category || 'ubnd',
-          gEvt.status || 'scheduled',
-          finalDoc,
-          gcalId,
-          existingRow.id
+          gEvt.title, start, end, finalChair, finalLoc, finalAtt, finalPrep,
+          gEvt.category || 'ubnd', gEvt.status || 'scheduled', finalDoc, gcalId, existingRow.id
         ];
         db.run(sql, values, (err) => {
           if (err) reject(err);
@@ -505,18 +509,14 @@ async function upsertGcalEvents(gcalEvents) {
       });
       updatedCount++;
     } else {
-      // Chèn cuộc họp mới nếu chưa tồn tại
       await new Promise((resolve, reject) => {
         const sql = `
           INSERT INTO events (title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status, document_link, gcal_id)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const values = [
-          gEvt.title, start, end,
-          finalChair, finalLoc,
-          finalAtt, finalPrep,
-          gEvt.category || 'ubnd', gEvt.status || 'scheduled',
-          finalDoc, gcalId
+          gEvt.title, start, end, finalChair, finalLoc, finalAtt, finalPrep,
+          gEvt.category || 'ubnd', gEvt.status || 'scheduled', finalDoc, gcalId
         ];
         db.run(sql, values, (err) => {
           if (err) reject(err);
@@ -531,259 +531,229 @@ async function upsertGcalEvents(gcalEvents) {
 }
 
 /**
- * 6. Đồng bộ lịch từ Google Apps Script (Chạy phía server & hỗ trợ nhận Webhook Push)
+ * 6. Đồng bộ Google Calendar (Yêu cầu xác thực Admin)
  * POST /api/sync-gcal
  */
-app.post('/api/sync-gcal', async (req, res) => {
+app.post('/api/sync-gcal', requireAuth, async (req, res) => {
   try {
-    // Trường hợp 1: Google Apps Script đẩy dữ liệu chủ động (Push Webhook) trực tiếp qua body JSON
-    if (req.body && (Array.isArray(req.body) || Array.isArray(req.body.events))) {
-      const gcalEvents = Array.isArray(req.body) ? req.body : req.body.events;
-      const { insertedCount, updatedCount } = await upsertGcalEvents(gcalEvents);
-      return res.json({ success: true, insertedCount, updatedCount, message: `Đồng bộ thành công! Thêm mới: ${insertedCount}, Cập nhật: ${updatedCount}` });
-    }
-
-    // Trường hợp 2: Server gọi chủ động kéo dữ liệu từ Google Apps Script URL
-    let targetUrl = req.body.appsScriptUrl;
-    if (!targetUrl) {
-      const settingsPath = path.join(__dirname, 'settings.json');
-      if (fs.existsSync(settingsPath)) {
+    let targetUrl = null;
+    const settingsPath = path.join(__dirname, 'settings.json');
+    if (fs.existsSync(settingsPath)) {
+      try {
         const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
         targetUrl = settings.appsScriptUrl;
-      }
+      } catch (e) {}
+    }
+
+    if (!targetUrl && process.env.APPS_SCRIPT_URL) {
+      targetUrl = process.env.APPS_SCRIPT_URL;
     }
 
     if (!targetUrl) {
-      return res.status(400).json({ error: 'Thiếu đường dẫn Google Apps Script URL.' });
+      return res.status(400).json({ error: 'Chưa cấu hình Google Apps Script URL trong cài đặt máy chủ.' });
+    }
+
+    const validation = validateGoogleAppsScriptUrl(targetUrl);
+    if (!validation.valid) {
+      return res.status(400).json({ error: `URL Google Apps Script không hợp lệ: ${validation.reason}` });
     }
 
     const today = new Date();
     const startRange = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
     const endRange = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-    
     const formatDateISO = (d) => d.toISOString().split('T')[0];
+
     const fetchUrl = `${targetUrl}?startDate=${formatDateISO(startRange)}&endDate=${formatDateISO(endRange)}`;
 
-    const response = await fetch(fetchUrl, { redirect: 'follow' });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    const response = await fetch(fetchUrl, {
+      redirect: 'manual',
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
-      return res.status(502).json({ error: `Không thể kết nối tới Google Apps Script (HTTP ${response.status})` });
+      return res.status(502).json({ error: `Kết nối Google Apps Script thất bại (HTTP ${response.status})` });
     }
 
     const responseText = await response.text();
+    if (responseText.length > 2 * 1024 * 1024) {
+      return res.status(502).json({ error: 'Dữ liệu phản hồi từ Google quá lớn.' });
+    }
+
     let gcalEvents = [];
     try {
       gcalEvents = JSON.parse(responseText);
     } catch (parseErr) {
-      return res.status(502).json({ error: 'Google Apps Script trả về trang HTML thay vì JSON. Vui lòng kiểm tra lại thiết lập Deploy Web App (Quyền truy cập phải chọn "Anyone / Bất kỳ ai").' });
+      return res.status(502).json({ error: 'Dữ liệu trả về không đúng định dạng JSON.' });
     }
 
     if (!Array.isArray(gcalEvents)) {
-      return res.status(502).json({ error: 'Dữ liệu nhận về từ Google Apps Script không đúng định dạng danh sách.' });
+      return res.status(502).json({ error: 'Dữ liệu Google Apps Script không phải định dạng danh sách.' });
     }
 
     const { insertedCount, updatedCount } = await upsertGcalEvents(gcalEvents);
     res.json({ success: true, insertedCount, updatedCount, message: `Đồng bộ thành công! Thêm mới: ${insertedCount}, Cập nhật: ${updatedCount}` });
   } catch (error) {
-    res.status(500).json({ error: 'Lỗi đồng bộ phía máy chủ: ' + error.message });
+    res.status(500).json({ error: 'Lỗi máy chủ trong quá trình đồng bộ.' });
   }
 });
 
-// 7. Lấy cấu hình hệ thống từ server (Public)
+/**
+ * 7. Lấy cấu hình hệ thống (Public - Đã ẩn thông tin nhạy cảm)
+ * GET /api/settings
+ */
 app.get('/api/settings', (req, res) => {
   const settingsPath = path.join(__dirname, 'settings.json');
+  let settings = {};
   if (fs.existsSync(settingsPath)) {
     try {
-      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      // Masking các dữ liệu nhạy cảm
-      const safeSettings = { ...settings };
-      if (safeSettings.webhookSecret) safeSettings.webhookSecret = '********';
-      return res.json(safeSettings);
-    } catch (e) {
-      return res.status(500).json({ error: 'Lỗi đọc cấu hình từ máy chủ.' });
-    }
+      settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    } catch (e) {}
   }
-  res.json({});
+
+  const safeSettings = {
+    appsScriptUrl: settings.appsScriptUrl || '',
+    hasWebhookSecret: Boolean(getWebhookSecret()),
+    hasAdminPassword: Boolean(getAdminPassword())
+  };
+
+  res.json(safeSettings);
 });
 
-// 8. Lưu cấu hình hệ thống lên server (Yêu cầu mật khẩu)
+/**
+ * 8. Lưu cấu hình hệ thống (Yêu cầu Admin)
+ * POST /api/settings
+ */
 app.post('/api/settings', requireAuth, (req, res) => {
-  const newSettings = req.body;
+  const newSettings = req.body || {};
   const settingsPath = path.join(__dirname, 'settings.json');
+
   try {
     let currentSettings = {};
     if (fs.existsSync(settingsPath)) {
-      currentSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      try {
+        currentSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      } catch (e) {}
     }
-    
-    // Hợp nhất cấu hình, giữ lại webhookSecret thật nếu gửi lên là masked '********'
+
     const mergedSettings = { ...currentSettings, ...newSettings };
     if (newSettings.webhookSecret === '********') {
       mergedSettings.webhookSecret = currentSettings.webhookSecret || '';
     }
+    if (newSettings.adminPassword === '********') {
+      mergedSettings.adminPassword = currentSettings.adminPassword || '';
+    }
 
     fs.writeFileSync(settingsPath, JSON.stringify(mergedSettings, null, 2), 'utf8');
     res.json({ message: 'Lưu cấu hình hệ thống thành công!' });
-    
-    // Kích hoạt đồng bộ ngay lập tức sau khi cấu hình thay đổi
-    setTimeout(autoSyncGcal, 1000);
   } catch (e) {
-    res.status(500).json({ error: 'Lỗi ghi cấu hình lên máy chủ: ' + e.message });
+    res.status(500).json({ error: 'Lỗi ghi file cấu hình.' });
   }
 });
 
-// Middleware xác thực chữ ký bảo mật từ GitHub Webhook
+// Middleware xác thực chữ ký Webhook (Fail-Closed)
+const processedDeliveries = new Set();
 function verifyWebhookSignature(req, res, next) {
-  const signature = req.headers['x-hub-signature-256'];
-  const settingsPath = path.join(__dirname, 'settings.json');
-  let secret = process.env.GITHUB_WEBHOOK_SECRET || '';
-
-  if (fs.existsSync(settingsPath)) {
-    try {
-      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      if (settings.webhookSecret) {
-        secret = settings.webhookSecret;
-      }
-    } catch (e) {}
-  }
-
-  // Nếu không thiết lập secret trên server, cho phép bỏ qua kiểm tra để dễ dàng kích hoạt lần đầu
+  const secret = getWebhookSecret();
   if (!secret) {
-    return next();
+    return res.status(401).json({ error: 'Máy chủ chưa được cấu hình Webhook Secret.' });
   }
 
+  const signature = req.headers['x-hub-signature-256'];
   if (!signature) {
-    return res.status(401).json({ error: 'Thiếu chữ ký xác thực X-Hub-Signature-256 từ GitHub.' });
+    return res.status(401).json({ error: 'Thiếu chữ ký xác thực X-Hub-Signature-256.' });
   }
 
-  // Sử dụng raw body buffer nhận từ mạng để đảm bảo băm chính xác tuyệt đối
+  const deliveryId = req.headers['x-github-delivery'];
+  if (deliveryId) {
+    if (processedDeliveries.has(deliveryId)) {
+      return res.status(200).json({ message: 'Tín hiệu Delivery ID đã được xử lý trước đó.' });
+    }
+    processedDeliveries.add(deliveryId);
+    if (processedDeliveries.size > 1000) {
+      const firstKey = processedDeliveries.values().next().value;
+      processedDeliveries.delete(firstKey);
+    }
+  }
+
   const payload = req.rawBody ? req.rawBody : JSON.stringify(req.body);
   const hmac = crypto.createHmac('sha256', secret);
   const digest = 'sha256=' + hmac.update(payload).digest('hex');
 
   try {
-    if (crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest))) {
+    const sigBuf = Buffer.from(signature);
+    const digBuf = Buffer.from(digest);
+    if (sigBuf.length === digBuf.length && crypto.timingSafeEqual(sigBuf, digBuf)) {
       next();
     } else {
-      res.status(403).json({ error: 'Chữ ký Webhook không khớp.' });
+      res.status(403).json({ error: 'Chữ ký Webhook không chính xác.' });
     }
   } catch (err) {
-    res.status(400).json({ error: 'Lỗi kiểm tra chữ ký: ' + err.message });
+    res.status(400).json({ error: 'Lỗi xác thực chữ ký Webhook.' });
   }
 }
 
-// 9. API Webhook tự động kéo mã nguồn từ Github và reload PM2 khi có push
+/**
+ * 9. API Webhook tự động reload PM2 khi có push nhánh master
+ * POST /api/deploy-webhook
+ */
 app.post('/api/deploy-webhook', verifyWebhookSignature, (req, res) => {
-  console.log('Webhook: Nhận tín hiệu push từ GitHub, bắt đầu tự động deploy...');
-  
-  // Chạy các lệnh kéo git và reload PM2 trên VPS
-  exec('git pull origin master && pm2 reload "app.nghialam.com"', (err, stdout, stderr) => {
+  const event = req.headers['x-github-event'];
+  if (event !== 'push') {
+    return res.json({ message: 'Bỏ qua sự kiện không phải push.' });
+  }
+
+  const ref = req.body ? req.body.ref : null;
+  if (ref && ref !== 'refs/heads/master') {
+    return res.json({ message: 'Bỏ qua push ngoài nhánh master.' });
+  }
+
+  console.log('Webhook: Nhận tín hiệu push master thành công, kích hoạt pm2 reload app.nghialam.com...');
+
+  execFile('pm2', ['reload', 'app.nghialam.com', '--update-env'], (err) => {
     if (err) {
-      console.error('Lỗi tự động deploy:', err.message);
-      return res.status(500).json({ error: 'Lỗi chạy lệnh deploy: ' + err.message });
+      console.error('Lỗi khi thực thi pm2 reload:', err.message);
+      return res.status(500).json({ error: 'Tự động cập nhật thất bại.' });
     }
-    console.log('Deploy thành công:\n', stdout);
-    res.json({ success: true, message: 'Đã tự động deploy và cập nhật thành công!', stdout });
+    res.json({ success: true, message: 'Đã cập nhật dịch vụ thành công!' });
   });
 });
 
-// Hàm đồng bộ lịch từ Google Apps Script chạy ngầm trên server
-async function autoSyncGcal() {
-  try {
-    const settingsPath = path.join(__dirname, 'settings.json');
-    if (!fs.existsSync(settingsPath)) return;
-    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-    const appsScriptUrl = settings.appsScriptUrl;
-    if (!appsScriptUrl) {
-      console.log('Đồng bộ định kỳ: Chưa cấu hình Google Apps Script URL trên máy chủ.');
-      return;
-    }
-
-    console.log('Đồng bộ định kỳ: Bắt đầu tải lịch từ Google Calendar...');
-    const today = new Date();
-    const startRange = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 ngày trước
-    const endRange = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);   // 30 ngày sau
-    
-    const formatDateISO = (d) => d.toISOString().split('T')[0];
-    const fetchUrl = `${appsScriptUrl}?startDate=${formatDateISO(startRange)}&endDate=${formatDateISO(endRange)}`;
-
-    const response = await fetch(fetchUrl, { redirect: 'follow' });
-    if (!response.ok) {
-      console.warn(`Đồng bộ định kỳ thất bại: Máy chủ Google trả về mã lỗi HTTP ${response.status}`);
-      return;
-    }
-
-    const responseText = await response.text();
-    let gcalEvents = [];
-    try {
-      gcalEvents = JSON.parse(responseText);
-    } catch (e) {
-      console.warn('Đồng bộ định kỳ thất bại: Google Apps Script trả về HTML thay vì JSON (Cần kiểm tra quyền Anyone).');
-      return;
-    }
-
-    if (!Array.isArray(gcalEvents)) {
-      console.warn('Đồng bộ định kỳ thất bại: Dữ liệu Google Apps Script trả về không đúng định dạng danh sách.');
-      return;
-    }
-
-    const { insertedCount, updatedCount } = await upsertGcalEvents(gcalEvents);
-    if (insertedCount > 0 || updatedCount > 0) {
-      console.log(`Đồng bộ định kỳ thành công: Đã chèn mới ${insertedCount} và cập nhật ${updatedCount} lịch họp từ Google Calendar.`);
-    } else {
-      console.log('Đồng bộ định kỳ: Dữ liệu lịch làm việc đã đồng nhất.');
-    }
-  } catch (error) {
-    console.error('Lỗi trong tiến trình đồng bộ định kỳ Google Calendar:', error.message);
-  }
-}
-
-// Tự động tải Quốc huy chính thức từ Wikimedia Commons về thư mục public nếu chưa tồn tại
+// Tự động tải Quốc huy chính thức từ Wikimedia Commons
 async function downloadEmblem() {
   const emblemPath = path.join(__dirname, 'public', 'emblem.svg');
-  // Luôn thử tải nếu file trống hoặc là file lỗi (dưới 500 bytes)
   let shouldDownload = true;
   if (fs.existsSync(emblemPath)) {
     const stats = fs.statSync(emblemPath);
-    if (stats.size > 500) {
-      shouldDownload = false;
-    }
+    if (stats.size > 500) shouldDownload = false;
   }
 
   if (shouldDownload) {
     try {
-      console.log('Đang tự động tải tệp SVG Quốc huy chính thức về máy chủ...');
       const response = await fetch('https://upload.wikimedia.org/wikipedia/commons/e/e0/Emblem_of_Vietnam.svg', {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+        headers: { 'User-Agent': 'UBND-NghiaLam-Calendar/1.0' }
       });
       if (response.ok) {
         const text = await response.text();
-        if (text.includes('<svg') && !text.includes('File not found') && !text.includes('Wikimedia Error')) {
+        if (text.includes('<svg') && !text.includes('File not found')) {
           fs.writeFileSync(emblemPath, text);
-          console.log('Đã cập nhật Quốc huy chính thức thành công tại public/emblem.svg');
-        } else {
-          console.warn('Nội dung tải về không hợp lệ, giữ nguyên Quốc huy dự phòng.');
         }
-      } else {
-        console.warn('Máy chủ tải logo thất bại, mã lỗi HTTP:', response.status);
       }
-    } catch (err) {
-      console.error('Không thể tải Quốc huy do lỗi mạng:', err.message);
-    }
+    } catch (err) {}
   }
 }
 
+// Khởi động server (nếu không phải đang chạy trong môi trường test)
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`================================================================`);
+    console.log(`Máy chủ Lịch làm việc UBND Xã đang chạy tại http://localhost:${PORT}`);
+    console.log(`================================================================`);
+    downloadEmblem();
+  });
+}
 
-
-// Khởi động server
-app.listen(PORT, () => {
-  console.log(`================================================================`);
-  console.log(`Máy chủ Lịch làm việc UBND Xã đang chạy tại http://localhost:${PORT}`);
-  console.log(`================================================================`);
-  downloadEmblem();
-  
-  // Tự động đồng bộ lịch lần đầu sau khi khởi động 5 giây
-  setTimeout(autoSyncGcal, 5000);
-  
-  // Thiết lập đồng bộ định kỳ mỗi 5 phút (300.000 ms) chạy ngầm hoàn toàn
-  setInterval(autoSyncGcal, 300000);
-});
+module.exports = app;
