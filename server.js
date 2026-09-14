@@ -362,6 +362,9 @@ function parseGcalDescription(desc, defaultLoc) {
   return result;
 }
 
+// Tự động bổ sung cột gcal_id vào bảng events nếu chưa tồn tại
+db.run("ALTER TABLE events ADD COLUMN gcal_id TEXT", (err) => {});
+
 // Hàm helper hợp nhất/cập nhật dữ liệu từ Google Calendar vào SQLite database
 async function upsertGcalEvents(gcalEvents) {
   if (!Array.isArray(gcalEvents)) return { insertedCount: 0, updatedCount: 0 };
@@ -370,6 +373,7 @@ async function upsertGcalEvents(gcalEvents) {
 
   for (const gEvt of gcalEvents) {
     if (!gEvt || !gEvt.title || !gEvt.start_time) continue;
+    const gcalId = gEvt.gcal_id || gEvt.google_event_id || gEvt.id || '';
     const start = gEvt.start_time.replace('T', ' ');
     const end = (gEvt.end_time || gEvt.start_time).replace('T', ' ');
 
@@ -380,21 +384,30 @@ async function upsertGcalEvents(gcalEvents) {
     const finalPrep = gEvt.preparing_unit || descInfo.preparing_unit || '';
     const finalDoc = gEvt.document_link || descInfo.document_link || '';
 
-    const existingRow = await new Promise((resolve) => {
-      db.get("SELECT id FROM events WHERE title = ? AND start_time = ?", [gEvt.title, start], (err, row) => {
-        resolve(row || null);
+    // Tìm kiếm cuộc họp đã tồn tại theo gcal_id hoặc (title + start_time)
+    let existingRow = null;
+    if (gcalId) {
+      existingRow = await new Promise((resolve) => {
+        db.get("SELECT id FROM events WHERE gcal_id = ?", [gcalId], (err, row) => resolve(row || null));
       });
-    });
+    }
+    if (!existingRow) {
+      existingRow = await new Promise((resolve) => {
+        db.get("SELECT id FROM events WHERE title = ? AND start_time = ?", [gEvt.title, start], (err, row) => resolve(row || null));
+      });
+    }
 
     if (existingRow) {
-      // Cập nhật cuộc họp nếu thông tin thay đổi
+      // Cập nhật toàn bộ thông tin mới nhất (kể cả khi đổi tiêu đề hay giờ họp)
       await new Promise((resolve, reject) => {
         const sql = `
           UPDATE events 
-          SET end_time = ?, chairperson = ?, location = ?, attendees = ?, preparing_unit = ?, category = ?, status = ?, document_link = ?
+          SET title = ?, start_time = ?, end_time = ?, chairperson = ?, location = ?, attendees = ?, preparing_unit = ?, category = ?, status = ?, document_link = ?, gcal_id = ?
           WHERE id = ?
         `;
         const values = [
+          gEvt.title,
+          start,
           end,
           finalChair,
           finalLoc,
@@ -403,6 +416,7 @@ async function upsertGcalEvents(gcalEvents) {
           gEvt.category || 'ubnd',
           gEvt.status || 'scheduled',
           finalDoc,
+          gcalId,
           existingRow.id
         ];
         db.run(sql, values, (err) => {
@@ -412,18 +426,18 @@ async function upsertGcalEvents(gcalEvents) {
       });
       updatedCount++;
     } else {
-      // Chèn mới nếu chưa tồn tại
+      // Chèn cuộc họp mới nếu chưa tồn tại
       await new Promise((resolve, reject) => {
         const sql = `
-          INSERT INTO events (title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status, document_link)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO events (title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status, document_link, gcal_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const values = [
           gEvt.title, start, end,
           finalChair, finalLoc,
           finalAtt, finalPrep,
           gEvt.category || 'ubnd', gEvt.status || 'scheduled',
-          finalDoc
+          finalDoc, gcalId
         ];
         db.run(sql, values, (err) => {
           if (err) reject(err);
