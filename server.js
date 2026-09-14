@@ -312,23 +312,107 @@ app.delete('/api/events/:id', requireAuth, (req, res) => {
   });
 });
 
-/**
- * 6. Đồng bộ lịch từ Google Apps Script (Chạy phía server để loại bỏ triệt để lỗi CORS ở trình duyệt)
- * POST /api/sync-gcal
- */
-app.post('/api/sync-gcal', requireAuth, async (req, res) => {
-  const { appsScriptUrl } = req.body;
-  if (!appsScriptUrl) {
-    return res.status(400).json({ error: 'Thiếu đường dẫn Google Apps Script URL.' });
+// Hàm helper hợp nhất/cập nhật dữ liệu từ Google Calendar vào SQLite database
+async function upsertGcalEvents(gcalEvents) {
+  if (!Array.isArray(gcalEvents)) return { insertedCount: 0, updatedCount: 0 };
+  let insertedCount = 0;
+  let updatedCount = 0;
+
+  for (const gEvt of gcalEvents) {
+    if (!gEvt || !gEvt.title || !gEvt.start_time) continue;
+    const start = gEvt.start_time.replace('T', ' ');
+    const end = (gEvt.end_time || gEvt.start_time).replace('T', ' ');
+
+    const existingRow = await new Promise((resolve) => {
+      db.get("SELECT id FROM events WHERE title = ? AND start_time = ?", [gEvt.title, start], (err, row) => {
+        resolve(row || null);
+      });
+    });
+
+    if (existingRow) {
+      // Cập nhật cuộc họp nếu thông tin thay đổi
+      await new Promise((resolve, reject) => {
+        const sql = `
+          UPDATE events 
+          SET end_time = ?, chairperson = ?, location = ?, attendees = ?, preparing_unit = ?, category = ?, status = ?, document_link = ?
+          WHERE id = ?
+        `;
+        const values = [
+          end,
+          gEvt.chairperson || '',
+          gEvt.location || '',
+          gEvt.attendees || '',
+          gEvt.preparing_unit || '',
+          gEvt.category || 'ubnd',
+          gEvt.status || 'scheduled',
+          gEvt.document_link || '',
+          existingRow.id
+        ];
+        db.run(sql, values, (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      updatedCount++;
+    } else {
+      // Chèn mới nếu chưa tồn tại
+      await new Promise((resolve, reject) => {
+        const sql = `
+          INSERT INTO events (title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status, document_link)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const values = [
+          gEvt.title, start, end,
+          gEvt.chairperson || '', gEvt.location || '',
+          gEvt.attendees || '', gEvt.preparing_unit || '',
+          gEvt.category || 'ubnd', gEvt.status || 'scheduled',
+          gEvt.document_link || ''
+        ];
+        db.run(sql, values, (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      insertedCount++;
+    }
   }
 
+  return { insertedCount, updatedCount };
+}
+
+/**
+ * 6. Đồng bộ lịch từ Google Apps Script (Chạy phía server & hỗ trợ nhận Webhook Push)
+ * POST /api/sync-gcal
+ */
+app.post('/api/sync-gcal', async (req, res) => {
   try {
+    // Trường hợp 1: Google Apps Script đẩy dữ liệu chủ động (Push Webhook) trực tiếp qua body JSON
+    if (req.body && (Array.isArray(req.body) || Array.isArray(req.body.events))) {
+      const gcalEvents = Array.isArray(req.body) ? req.body : req.body.events;
+      const { insertedCount, updatedCount } = await upsertGcalEvents(gcalEvents);
+      return res.json({ success: true, insertedCount, updatedCount, message: `Đồng bộ thành công! Thêm mới: ${insertedCount}, Cập nhật: ${updatedCount}` });
+    }
+
+    // Trường hợp 2: Server gọi chủ động kéo dữ liệu từ Google Apps Script URL
+    let targetUrl = req.body.appsScriptUrl;
+    if (!targetUrl) {
+      const settingsPath = path.join(__dirname, 'settings.json');
+      if (fs.existsSync(settingsPath)) {
+        const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+        targetUrl = settings.appsScriptUrl;
+      }
+    }
+
+    if (!targetUrl) {
+      return res.status(400).json({ error: 'Thiếu đường dẫn Google Apps Script URL.' });
+    }
+
     const today = new Date();
-    const startRange = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 ngày trước
-    const endRange = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);   // 30 ngày sau
+    const startRange = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const endRange = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
     
     const formatDateISO = (d) => d.toISOString().split('T')[0];
-    const fetchUrl = `${appsScriptUrl}?startDate=${formatDateISO(startRange)}&endDate=${formatDateISO(endRange)}`;
+    const fetchUrl = `${targetUrl}?startDate=${formatDateISO(startRange)}&endDate=${formatDateISO(endRange)}`;
 
     const response = await fetch(fetchUrl);
     if (!response.ok) {
@@ -340,47 +424,8 @@ app.post('/api/sync-gcal', requireAuth, async (req, res) => {
       return res.status(502).json({ error: 'Dữ liệu nhận về từ Google Apps Script không hợp lệ.' });
     }
 
-    let insertedCount = 0;
-    
-    for (const gEvt of gcalEvents) {
-      const start = gEvt.start_time.replace('T', ' ');
-      const end = gEvt.end_time.replace('T', ' ');
-      
-      // Kiểm tra trùng lặp
-      const exist = await new Promise((resolve) => {
-        db.get("SELECT id FROM events WHERE title = ? AND start_time = ?", [gEvt.title, start], (err, row) => {
-          resolve(!!row);
-        });
-      });
-
-      if (!exist) {
-        await new Promise((resolve, reject) => {
-          const sql = `
-            INSERT INTO events (title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status, document_link)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `;
-          const values = [
-            gEvt.title,
-            start,
-            end,
-            gEvt.chairperson || '',
-            gEvt.location || '',
-            gEvt.attendees || '',
-            gEvt.preparing_unit || '',
-            gEvt.category || 'ubnd',
-            gEvt.status || 'scheduled',
-            gEvt.document_link || ''
-          ];
-          db.run(sql, values, (err) => {
-            if (err) reject(err);
-            else resolve();
-          });
-        });
-        insertedCount++;
-      }
-    }
-
-    res.json({ success: true, insertedCount });
+    const { insertedCount, updatedCount } = await upsertGcalEvents(gcalEvents);
+    res.json({ success: true, insertedCount, updatedCount, message: `Đồng bộ thành công! Thêm mới: ${insertedCount}, Cập nhật: ${updatedCount}` });
   } catch (error) {
     res.status(500).json({ error: 'Lỗi đồng bộ phía máy chủ: ' + error.message });
   }
@@ -516,38 +561,9 @@ async function autoSyncGcal() {
       return;
     }
 
-    let insertedCount = 0;
-    for (const gEvt of gcalEvents) {
-      const start = gEvt.start_time.replace('T', ' ');
-      const end = gEvt.end_time.replace('T', ' ');
-      
-      const exist = await new Promise((resolve) => {
-        db.get("SELECT id FROM events WHERE title = ? AND start_time = ?", [gEvt.title, start], (err, row) => {
-          resolve(!!row);
-        });
-      });
-
-      if (!exist) {
-        await new Promise((resolve, reject) => {
-          const sql = `
-            INSERT INTO events (title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status, document_link)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `;
-          const values = [
-            gEvt.title, start, end, gEvt.chairperson || '', gEvt.location || '',
-            gEvt.attendees || '', gEvt.preparing_unit || '', gEvt.category || 'ubnd',
-            gEvt.status || 'scheduled', gEvt.document_link || ''
-          ];
-          db.run(sql, values, (err) => {
-            if (err) reject(err);
-            else resolve();
-          });
-        });
-        insertedCount++;
-      }
-    }
-    if (insertedCount > 0) {
-      console.log(`Đồng bộ định kỳ thành công: Đã tự động chèn thêm ${insertedCount} lịch họp mới từ Google Calendar.`);
+    const { insertedCount, updatedCount } = await upsertGcalEvents(gcalEvents);
+    if (insertedCount > 0 || updatedCount > 0) {
+      console.log(`Đồng bộ định kỳ thành công: Đã chèn mới ${insertedCount} và cập nhật ${updatedCount} lịch họp từ Google Calendar.`);
     } else {
       console.log('Đồng bộ định kỳ: Dữ liệu lịch làm việc đã đồng nhất.');
     }
