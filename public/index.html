@@ -27,6 +27,22 @@
     .modal-content {
       background: #FFFFFF; border-radius: 24px; width: 100%; max-width: 680px; max-height: 90vh;
       overflow-y: auto; padding: 28px; box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25); border: 1px solid #E4EAF2;
+    .quick-chip {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0284C7;
+      background: #F0F9FF;
+      border: 1px solid #BAE6FD;
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .quick-chip:hover {
+      background: #0284C7;
+      color: #FFFFFF;
+      border-color: #0284C7;
     }
   </style>
   <!-- External Libraries via CDN -->
@@ -222,22 +238,32 @@
         </div>
       </section>
 
-      <!-- Active Database/API Connection Badge -->
-      <div class="connection-status-container">
-        <span id="connection-badge" class="badge badge-offline">
-          <i class="fa-solid fa-circle"></i> <span id="connection-status-text">Đang chạy Offline (LocalStorage)</span>
-        </span>
-        <div class="admin-buttons-group admin-only" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+      <!-- Executive Admin Action Control Bar -->
+      <div class="admin-control-bar" style="display: flex; justify-content: space-between; align-items: center; background: #FFFFFF; border: 1px solid #E0F2FE; border-radius: 16px; padding: 14px 20px; margin-bottom: 20px; box-shadow: 0 4px 14px -2px rgba(2, 132, 199, 0.06); flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span id="connection-badge" class="badge badge-online" style="padding: 8px 14px; font-size: 13px; font-weight: 700; border-radius: 999px;">
+            <i class="fa-solid fa-circle text-emerald"></i> <span id="connection-status-text">Cơ sở dữ liệu Máy chủ Express + SQLite</span>
+          </span>
+        </div>
+        
+        <div class="admin-buttons-group admin-only" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
           <!-- Input file ẩn để upload -->
           <input type="file" id="input-upload-file" class="hidden" accept=".json,.csv" style="display: none;">
-          <button id="btn-upload-calendar" class="btn btn-secondary btn-sm" title="Nhập danh sách lịch họp từ file Excel/CSV hoặc JSON">
-            <i class="fa-solid fa-file-import"></i> Nhập từ file (.json/.csv)
+          
+          <button id="btn-sync-gcal-toolbar" class="btn btn-outline btn-sm" style="border-color: #0284C7; color: #0284C7; font-weight: 800; padding: 8px 16px;" title="Đồng bộ ngay dữ liệu từ Google Calendar">
+            <i class="fa-solid fa-rotate" id="icon-sync-gcal-toolbar"></i> Đồng bộ Google Calendar
           </button>
-          <button id="btn-open-settings-toolbar" class="btn btn-outline btn-sm admin-only" style="border-color: #0EA5E9; color: #0284C7; font-weight: 700;" title="Cấu hình hệ thống">
-            <i class="fa-solid fa-sliders" style="color: #0EA5E9;"></i> Cấu hình hệ thống
+          
+          <button id="btn-upload-calendar" class="btn btn-secondary btn-sm" style="padding: 8px 14px;" title="Nhập danh sách lịch họp từ file Excel/CSV hoặc JSON">
+            <i class="fa-solid fa-file-import"></i> Nhập từ file
           </button>
-          <button id="btn-add-event" class="btn btn-success btn-sm">
-            <i class="fa-solid fa-plus"></i> Thêm lịch mới
+          
+          <button id="btn-open-settings-toolbar" class="btn btn-outline btn-sm" style="border-color: #64748B; color: #334155; font-weight: 700; padding: 8px 14px;" title="Cấu hình hệ thống">
+            <i class="fa-solid fa-sliders"></i> Cấu hình
+          </button>
+          
+          <button id="btn-add-event" class="btn btn-success btn-sm" style="background: linear-gradient(135deg, #059669 0%, #10B981 100%); border: none; font-weight: 900; padding: 8px 20px; font-size: 14px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
+            <i class="fa-solid fa-plus-circle"></i> + THÊM LỊCH MỚI
           </button>
         </div>
       </div>
@@ -488,15 +514,28 @@
               <option value="PBT TT Đảng ủy - Đ/c Võ Tiến Sỹ">PBT TT Đảng ủy - Đ/c Võ Tiến Sỹ</option>
               <option value="PCT HĐND xã - Đ/c Nguyễn Vân Anh">PCT HĐND xã - Đ/c Nguyễn Vân Anh</option>
             </select>
+            <div class="quick-chips-group" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
+              <span class="quick-chip" onclick="document.getElementById('event-chairperson').value='Chủ tịch UBND - Đ/c Nguyễn Hùng Cường'">+ Đ/c Cường</span>
+              <span class="quick-chip" onclick="document.getElementById('event-chairperson').value='PCT UBND - Đ/c Nguyễn Huy Anh'">+ Đ/c Huy Anh</span>
+              <span class="quick-chip" onclick="document.getElementById('event-chairperson').value='PCT UBND - Đ/c Lô Xuân Du'">+ Đ/c Lô Du</span>
+            </div>
           </div>
           <div class="form-group col-6">
             <label for="event-location">Địa điểm <span class="text-danger">*</span></label>
             <select id="event-location" class="form-control" required>
               <option value="">-- Chọn địa điểm --</option>
               <option value="Phòng họp UBND">Phòng họp UBND</option>
+              <option value="Phòng họp tầng 2">Phòng họp tầng 2</option>
               <option value="Hội trường UBND">Hội trường UBND</option>
               <option value="Hội trường Đảng ủy">Hội trường Đảng ủy</option>
+              <option value="Phòng Tiếp công dân">Phòng Tiếp công dân</option>
+              <option value="Hiện trường">Hiện trường cơ sở</option>
             </select>
+            <div class="quick-chips-group" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
+              <span class="quick-chip" onclick="document.getElementById('event-location').value='Phòng họp tầng 2'">+ Tầng 2</span>
+              <span class="quick-chip" onclick="document.getElementById('event-location').value='Hội trường UBND'">+ Hội trường</span>
+              <span class="quick-chip" onclick="document.getElementById('event-location').value='Phòng Tiếp công dân'">+ Tiếp dân</span>
+            </div>
           </div>
         </div>
 
@@ -524,6 +563,12 @@
             <option value="Hội Nông dân">Hội Nông dân</option>
             <option value="Hội Cựu chiến binh">Hội Cựu chiến binh</option>
           </select>
+          <div class="quick-chips-group" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
+            <span class="quick-chip" onclick="document.getElementById('event-preparing').value='Văn phòng UBND'">+ Văn phòng</span>
+            <span class="quick-chip" onclick="document.getElementById('event-preparing').value='Địa chính - Xây dựng'">+ Địa chính</span>
+            <span class="quick-chip" onclick="document.getElementById('event-preparing').value='Tài chính - Kế hoạch'">+ Tài chính</span>
+            <span class="quick-chip" onclick="document.getElementById('event-preparing').value='Công an xã'">+ Công an</span>
+          </div>
         </div>
 
         <div class="form-group">

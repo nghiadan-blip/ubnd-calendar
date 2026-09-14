@@ -2066,6 +2066,35 @@ function setupEventListeners() {
   if (appsScriptUrlInput) {
     appsScriptUrlInput.addEventListener('input', updateAppsScriptButtonState);
   }
+
+  const btnSyncGcalToolbar = document.getElementById('btn-sync-gcal-toolbar');
+  if (btnSyncGcalToolbar) {
+    btnSyncGcalToolbar.addEventListener('click', async () => {
+      const icon = document.getElementById('icon-sync-gcal-toolbar');
+      if (icon) icon.classList.add('fa-spin');
+      btnSyncGcalToolbar.disabled = true;
+
+      try {
+        const res = await fetch('/api/sync-gcal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ appsScriptUrl: settings.appsScriptUrl })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          alert(`Đồng bộ Google Calendar thành công! ${data.message || ''}`);
+          await loadEvents();
+        } else {
+          alert(`Lỗi đồng bộ Google Calendar: ${data.error || 'Không thể lấy dữ liệu'}`);
+        }
+      } catch (err) {
+        alert('Lỗi kết nối máy chủ: ' + err.message);
+      } finally {
+        if (icon) icon.classList.remove('fa-spin');
+        btnSyncGcalToolbar.disabled = false;
+      }
+    });
+  }
 }
 
 function loadEventsWithFilter() {
