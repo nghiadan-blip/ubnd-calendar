@@ -312,6 +312,56 @@ app.delete('/api/events/:id', requireAuth, (req, res) => {
   });
 });
 
+// Hàm phân tích thông minh ô Mô tả (Description) để tự tách Chủ trì, Địa điểm, Thành phần, Link tài liệu
+function parseGcalDescription(desc, defaultLoc) {
+  const result = {
+    location: defaultLoc || '',
+    chairperson: '',
+    attendees: '',
+    preparing_unit: '',
+    document_link: ''
+  };
+
+  if (!desc) return result;
+
+  // Lược bỏ thẻ HTML
+  const clean = desc.replace(/<[^>]*>/g, ' ').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/\s+/g, ' ');
+
+  // Trích xuất link tài liệu đính kèm
+  const linkMatch = clean.match(/https?:\/\/[^\s<>"]+/i);
+  if (linkMatch) {
+    result.document_link = linkMatch[0];
+  }
+
+  // Trích xuất Chủ trì
+  const chairMatch = clean.match(/(?:Chủ trì|chu tri)\s*[:\s–-]?\s*([^.\n;]+)/i);
+  if (chairMatch && chairMatch[1]) {
+    result.chairperson = chairMatch[1].trim();
+  }
+
+  // Trích xuất Địa điểm nếu chưa có
+  if (!result.location) {
+    const locMatch = clean.match(/(?:Địa điểm|dia diem|tại|tai)\s*[:\s–-]?\s*([^.\n;]+)/i);
+    if (locMatch && locMatch[1]) {
+      result.location = locMatch[1].trim();
+    }
+  }
+
+  // Trích xuất Thành phần
+  const attMatch = clean.match(/(?:Thành phần|thanh phan)\s*[:\s–-]?\s*([^.\n;]+)/i);
+  if (attMatch && attMatch[1]) {
+    result.attendees = attMatch[1].trim();
+  }
+
+  // Trích xuất Đơn vị chuẩn bị
+  const prepMatch = clean.match(/(?:Đơn vị chuẩn bị|chuẩn bị)\s*[:\s–-]?\s*([^.\n;]+)/i);
+  if (prepMatch && prepMatch[1]) {
+    result.preparing_unit = prepMatch[1].trim();
+  }
+
+  return result;
+}
+
 // Hàm helper hợp nhất/cập nhật dữ liệu từ Google Calendar vào SQLite database
 async function upsertGcalEvents(gcalEvents) {
   if (!Array.isArray(gcalEvents)) return { insertedCount: 0, updatedCount: 0 };
@@ -322,6 +372,13 @@ async function upsertGcalEvents(gcalEvents) {
     if (!gEvt || !gEvt.title || !gEvt.start_time) continue;
     const start = gEvt.start_time.replace('T', ' ');
     const end = (gEvt.end_time || gEvt.start_time).replace('T', ' ');
+
+    const descInfo = parseGcalDescription(gEvt.description, gEvt.location);
+    const finalChair = gEvt.chairperson || descInfo.chairperson || 'Lãnh đạo UBND xã';
+    const finalLoc = gEvt.location || descInfo.location || 'Phòng họp UBND xã';
+    const finalAtt = gEvt.attendees || descInfo.attendees || '';
+    const finalPrep = gEvt.preparing_unit || descInfo.preparing_unit || '';
+    const finalDoc = gEvt.document_link || descInfo.document_link || '';
 
     const existingRow = await new Promise((resolve) => {
       db.get("SELECT id FROM events WHERE title = ? AND start_time = ?", [gEvt.title, start], (err, row) => {
@@ -339,13 +396,13 @@ async function upsertGcalEvents(gcalEvents) {
         `;
         const values = [
           end,
-          gEvt.chairperson || '',
-          gEvt.location || '',
-          gEvt.attendees || '',
-          gEvt.preparing_unit || '',
+          finalChair,
+          finalLoc,
+          finalAtt,
+          finalPrep,
           gEvt.category || 'ubnd',
           gEvt.status || 'scheduled',
-          gEvt.document_link || '',
+          finalDoc,
           existingRow.id
         ];
         db.run(sql, values, (err) => {
@@ -363,10 +420,10 @@ async function upsertGcalEvents(gcalEvents) {
         `;
         const values = [
           gEvt.title, start, end,
-          gEvt.chairperson || '', gEvt.location || '',
-          gEvt.attendees || '', gEvt.preparing_unit || '',
+          finalChair, finalLoc,
+          finalAtt, finalPrep,
           gEvt.category || 'ubnd', gEvt.status || 'scheduled',
-          gEvt.document_link || ''
+          finalDoc
         ];
         db.run(sql, values, (err) => {
           if (err) reject(err);
