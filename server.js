@@ -531,18 +531,40 @@ async function upsertGcalEvents(gcalEvents) {
 }
 
 /**
- * 6. Đồng bộ Google Calendar (Yêu cầu xác thực Admin)
+ * 6. Đồng bộ Google Calendar (Yêu cầu xác thực Admin hoặc Webhook Push)
  * POST /api/sync-gcal
  */
-app.post('/api/sync-gcal', requireAuth, async (req, res) => {
+app.post('/api/sync-gcal', async (req, res) => {
   try {
-    let targetUrl = null;
-    const settingsPath = path.join(__dirname, 'settings.json');
-    if (fs.existsSync(settingsPath)) {
-      try {
-        const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-        targetUrl = settings.appsScriptUrl;
-      } catch (e) {}
+    // 1. Kiểm tra trường hợp Google Apps Script Push Webhook trực tiếp
+    if (req.body && (Array.isArray(req.body) || Array.isArray(req.body.events))) {
+      const gcalEvents = Array.isArray(req.body) ? req.body : req.body.events;
+      const { insertedCount, updatedCount } = await upsertGcalEvents(gcalEvents);
+      return res.json({ success: true, insertedCount, updatedCount, message: `Đồng bộ thành công! Thêm mới: ${insertedCount}, Cập nhật: ${updatedCount}` });
+    }
+
+    // Yêu cầu xác thực Admin cho các cuộc gọi Pull chủ động
+    const adminPassword = getAdminPassword();
+    if (adminPassword) {
+      const authHeader = req.headers['authorization'];
+      let token = null;
+      if (authHeader && authHeader.startsWith('Bearer ')) token = authHeader.substring(7);
+      else if (req.headers['x-admin-token']) token = req.headers['x-admin-token'];
+
+      if (!token || !activeSessions.has(token)) {
+        return res.status(401).json({ error: 'Yêu cầu xác thực quản trị viên để đồng bộ thủ công.' });
+      }
+    }
+
+    let targetUrl = (req.body && req.body.appsScriptUrl) ? req.body.appsScriptUrl.trim() : null;
+    if (!targetUrl) {
+      const settingsPath = path.join(__dirname, 'settings.json');
+      if (fs.existsSync(settingsPath)) {
+        try {
+          const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+          targetUrl = settings.appsScriptUrl;
+        } catch (e) {}
+      }
     }
 
     if (!targetUrl && process.env.APPS_SCRIPT_URL) {
@@ -566,16 +588,16 @@ app.post('/api/sync-gcal', requireAuth, async (req, res) => {
     const fetchUrl = `${targetUrl}?startDate=${formatDateISO(startRange)}&endDate=${formatDateISO(endRange)}`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     const response = await safeFetch(fetchUrl, {
-      redirect: 'manual',
+      redirect: 'follow',
       signal: controller.signal
     });
     clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      return res.status(502).json({ error: `Kết nối Google Apps Script thất bại (HTTP ${response.status})` });
+    if (!response || !response.ok) {
+      return res.status(502).json({ error: `Kết nối Google Apps Script thất bại (HTTP ${response ? response.status : 'N/A'}). Vui lòng kiểm tra quyền "Bất kỳ ai / Anyone".` });
     }
 
     const responseText = await response.text();
@@ -587,7 +609,7 @@ app.post('/api/sync-gcal', requireAuth, async (req, res) => {
     try {
       gcalEvents = JSON.parse(responseText);
     } catch (parseErr) {
-      return res.status(502).json({ error: 'Dữ liệu trả về không đúng định dạng JSON.' });
+      return res.status(502).json({ error: 'Google Apps Script trả về HTML thay vì JSON. Vui lòng kiểm tra cài đặt Deploy Web App (Quyền truy cập phải chọn "Anyone / Bất kỳ ai").' });
     }
 
     if (!Array.isArray(gcalEvents)) {
@@ -597,9 +619,57 @@ app.post('/api/sync-gcal', requireAuth, async (req, res) => {
     const { insertedCount, updatedCount } = await upsertGcalEvents(gcalEvents);
     res.json({ success: true, insertedCount, updatedCount, message: `Đồng bộ thành công! Thêm mới: ${insertedCount}, Cập nhật: ${updatedCount}` });
   } catch (error) {
-    res.status(500).json({ error: 'Lỗi máy chủ trong quá trình đồng bộ.' });
+    res.status(500).json({ error: 'Lỗi máy chủ trong quá trình đồng bộ: ' + error.message });
   }
 });
+
+// Hàm đồng bộ định kỳ Google Calendar chạy ngầm phía server
+async function autoSyncGcal() {
+  try {
+    const settingsPath = path.join(__dirname, 'settings.json');
+    let targetUrl = process.env.APPS_SCRIPT_URL || null;
+    if (fs.existsSync(settingsPath)) {
+      try {
+        const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+        if (settings.appsScriptUrl) targetUrl = settings.appsScriptUrl;
+      } catch (e) {}
+    }
+
+    if (!targetUrl) return;
+
+    const validation = validateGoogleAppsScriptUrl(targetUrl);
+    if (!validation.valid) return;
+
+    const today = new Date();
+    const startRange = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const endRange = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const formatDateISO = (d) => d.toISOString().split('T')[0];
+
+    const fetchUrl = `${targetUrl}?startDate=${formatDateISO(startRange)}&endDate=${formatDateISO(endRange)}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    const response = await safeFetch(fetchUrl, {
+      redirect: 'follow',
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (response && response.ok) {
+      const text = await response.text();
+      let gcalEvents = [];
+      try { gcalEvents = JSON.parse(text); } catch (e) {}
+      if (Array.isArray(gcalEvents) && gcalEvents.length > 0) {
+        const { insertedCount, updatedCount } = await upsertGcalEvents(gcalEvents);
+        if (insertedCount > 0 || updatedCount > 0) {
+          console.log(`Đồng bộ Google Calendar định kỳ: Thêm mới ${insertedCount}, Cập nhật ${updatedCount}.`);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Lỗi đồng bộ ngầm Google Calendar:', err.message);
+  }
+}
 
 /**
  * 7. Lấy cấu hình hệ thống (Public - Đã ẩn thông tin nhạy cảm)
@@ -761,6 +831,8 @@ if (require.main === module) {
     console.log(`Máy chủ Lịch làm việc UBND Xã đang chạy tại http://localhost:${PORT}`);
     console.log(`================================================================`);
     downloadEmblem();
+    setTimeout(autoSyncGcal, 5000);
+    setInterval(autoSyncGcal, 300000);
   });
 }
 
