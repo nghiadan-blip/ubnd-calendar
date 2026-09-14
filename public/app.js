@@ -238,8 +238,10 @@ async function saveSettings() {
 
 function updateAppsScriptButtonState() {
   const btnTestGas = document.getElementById('btn-test-gas');
+  const inputUrl = document.getElementById('setting-apps-script-url');
   if (btnTestGas) {
-    btnTestGas.disabled = !settings.appsScriptUrl;
+    const currentUrl = inputUrl ? inputUrl.value.trim() : settings.appsScriptUrl;
+    btnTestGas.disabled = !currentUrl;
   }
 }
 
@@ -2002,14 +2004,15 @@ function setupEventListeners() {
 
   document.getElementById('btn-test-backend').addEventListener('click', async () => {
     const statusBox = document.getElementById('settings-status-box');
-    statusBox.classList.remove('hidden', 'success', 'error');
+    statusBox.className = 'settings-status-box';
+    statusBox.classList.remove('hidden');
     statusBox.textContent = 'Đang kết nối thử nghiệm Express backend...';
 
     try {
       const res = await fetch('/api/events?query=test-connection');
       if (res.ok) {
         statusBox.className = 'settings-status-box success';
-        statusBox.textContent = 'Kết nối thành công! Máy chủ Express đang hoạt động.';
+        statusBox.textContent = 'Kết nối thành công! Máy chủ Express + Cơ sở dữ liệu SQLite đang hoạt động.';
       } else {
         throw new Error();
       }
@@ -2018,6 +2021,51 @@ function setupEventListeners() {
       statusBox.textContent = 'Lỗi kết nối! Đảm bảo máy chủ Node.js đang chạy và cổng hoạt động chính xác.';
     }
   });
+
+  const btnTestGas = document.getElementById('btn-test-gas');
+  if (btnTestGas) {
+    btnTestGas.addEventListener('click', async () => {
+      const statusBox = document.getElementById('settings-status-box');
+      const appsScriptUrlInput = document.getElementById('setting-apps-script-url');
+      const appsScriptUrl = appsScriptUrlInput ? appsScriptUrlInput.value.trim() : settings.appsScriptUrl;
+
+      if (!appsScriptUrl) {
+        statusBox.className = 'settings-status-box error';
+        statusBox.classList.remove('hidden');
+        statusBox.textContent = 'Vui lòng nhập đường dẫn Google Apps Script Web App URL trước khi thử nghiệm.';
+        return;
+      }
+
+      statusBox.className = 'settings-status-box';
+      statusBox.classList.remove('hidden');
+      statusBox.textContent = 'Đang kết nối tới Google Apps Script & thử nghiệm đồng bộ...';
+
+      try {
+        const res = await fetch('/api/sync-gcal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ appsScriptUrl })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          statusBox.className = 'settings-status-box success';
+          statusBox.textContent = `Thành công! ${data.message || 'Đã kết nối tới Google Apps Script và nạp lịch.'}`;
+          loadEvents();
+        } else {
+          statusBox.className = 'settings-status-box error';
+          statusBox.textContent = `Lỗi đồng bộ Google: ${data.error || 'Không thể đọc dữ liệu từ Google Apps Script.'}`;
+        }
+      } catch (err) {
+        statusBox.className = 'settings-status-box error';
+        statusBox.textContent = `Lỗi kết nối máy chủ: ${err.message}`;
+      }
+    });
+  }
+
+  const appsScriptUrlInput = document.getElementById('setting-apps-script-url');
+  if (appsScriptUrlInput) {
+    appsScriptUrlInput.addEventListener('input', updateAppsScriptButtonState);
+  }
 }
 
 function loadEventsWithFilter() {
