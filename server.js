@@ -568,7 +568,7 @@ app.post('/api/sync-gcal', requireAuth, async (req, res) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    const response = await fetch(fetchUrl, {
+    const response = await safeFetch(fetchUrl, {
       redirect: 'manual',
       signal: controller.signal
     });
@@ -722,6 +722,14 @@ app.post('/api/deploy-webhook', verifyWebhookSignature, (req, res) => {
   });
 });
 
+// Safe Fetch wrapper để không bị ReferenceError ở Node < 18
+const safeFetch = (...args) => {
+  if (typeof fetch === 'function') {
+    return fetch(...args);
+  }
+  return Promise.reject(new Error('Môi trường Node.js chưa hỗ trợ native fetch.'));
+};
+
 // Tự động tải Quốc huy chính thức từ Wikimedia Commons
 async function downloadEmblem() {
   const emblemPath = path.join(__dirname, 'public', 'emblem.svg');
@@ -733,10 +741,10 @@ async function downloadEmblem() {
 
   if (shouldDownload) {
     try {
-      const response = await fetch('https://upload.wikimedia.org/wikipedia/commons/e/e0/Emblem_of_Vietnam.svg', {
+      const response = await safeFetch('https://upload.wikimedia.org/wikipedia/commons/e/e0/Emblem_of_Vietnam.svg', {
         headers: { 'User-Agent': 'UBND-NghiaLam-Calendar/1.0' }
       });
-      if (response.ok) {
+      if (response && response.ok) {
         const text = await response.text();
         if (text.includes('<svg') && !text.includes('File not found')) {
           fs.writeFileSync(emblemPath, text);
@@ -746,8 +754,8 @@ async function downloadEmblem() {
   }
 }
 
-// Khởi động server (nếu không phải đang chạy trong môi trường test)
-if (process.env.NODE_ENV !== 'test') {
+// Khởi động server khi được chạy làm entry point chính (kể cả với PM2)
+if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`================================================================`);
     console.log(`Máy chủ Lịch làm việc UBND Xã đang chạy tại http://localhost:${PORT}`);
@@ -757,3 +765,4 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 module.exports = app;
+
