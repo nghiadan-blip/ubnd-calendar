@@ -611,194 +611,101 @@ async function saveEventData(eventData, override = false) {
         send_email: sendEmail
       };
 
-      // Gọi API Apps Script ở dạng đồng bộ trước để lấy Google Drive Folder URL
       const response = await fetch(settings.appsScriptUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8'
-        },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(gasPayload)
       });
 
-      // Đọc phản hồi JSON nếu Apps Script có hỗ trợ CORS trả về, nếu không chỉ ghi nhận gửi
       try {
         const gasResult = await response.json();
         if (gasResult && gasResult.success) {
-          if (gasResult.document_link) {
-            eventData.document_link = gasResult.document_link;
-          }
-          if (gasResult.google_event_id) {
-            eventData.google_event_id = gasResult.google_event_id;
-          }
-          console.log("Đã đồng bộ Google tự động:", gasResult);
+          if (gasResult.document_link) eventData.document_link = gasResult.document_link;
+          if (gasResult.google_event_id) eventData.google_event_id = gasResult.google_event_id;
         }
-      } catch (jsonErr) {
-        // Apps Script đôi khi Redirect làm trình duyệt chặn CORS đọc kết quả. Ta ghi nhận đã đồng bộ xong.
-        console.log("Đã gửi yêu cầu đồng bộ Google Apps Script (Redirected).");
-      }
+      } catch (jsonErr) {}
     } catch (err) {
-      console.warn("Không thể đồng bộ tự động Google Calendar/Drive:", err.message);
+      console.warn("Không thể đồng bộ tự động Google Apps Script:", err.message);
     }
   }
 
-  // 2. LƯU VÀO CƠ SỞ DỮ LIỆU CỤC BỘ (SQL WASM)
-  if (settings.syncMode === 'wasm-sqlite' && sqlDb) {
-    let conflictQuery = `
-      SELECT * FROM events 
-      WHERE location = ? 
-      AND status NOT IN ('cancelled', 'postponed')
-      AND NOT (end_time <= ? OR start_time >= ?)
-    `;
-    const conflictParams = [eventData.location, eventData.start_time, eventData.end_time];
-    if (eventData.id) {
-      conflictQuery += " AND id != ?";
-      conflictParams.push(eventData.id);
-    }
+  // 2. LƯU VÀO MÁY CHỦ EXPRESS BACKEND SQLITE
+  const url = eventData.id ? `/api/events/${eventData.id}` : '/api/events';
+  const method = eventData.id ? 'PUT' : 'POST';
 
-    const conflictStmt = sqlDb.prepare(conflictQuery);
-    conflictStmt.bind(conflictParams);
-    let conflict = null;
-    if (conflictStmt.step()) {
-      conflict = conflictStmt.getAsObject();
-    }
-    conflictStmt.free();
+  try {
+    const res = await fetch(url, {
+      method: method,
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (sessionStorage.getItem('admin_password') || 'NghiaLam@2026')
+      },
+      body: JSON.stringify(eventData)
+    });
 
-    if (conflict && !override) {
-      showConflictWarning(`[SQL-WASM] Phòng họp "${eventData.location}" đã trùng lịch với cuộc họp: "${conflict.title}" chủ trì bởi ${conflict.chairperson}.`);
+    const result = await res.json();
+
+    if (res.status === 409 && result.conflict) {
+      showConflictWarning(result.message);
       return false;
     }
 
-    if (eventData.id) {
-      sqlDb.run(`
-        UPDATE events 
-        SET title = ?, start_time = ?, end_time = ?, chairperson = ?, location = ?, 
-            attendees = ?, preparing_unit = ?, category = ?, status = ?, document_link = ?
-        WHERE id = ?
-      `, [
-        eventData.title, eventData.start_time, eventData.end_time, eventData.chairperson, eventData.location,
-        eventData.attendees, eventData.preparing_unit, eventData.category, eventData.status, eventData.document_link,
-        eventData.id
-      ]);
-    } else {
-      sqlDb.run(`
-        INSERT INTO events (title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status, document_link)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [
-        eventData.title, eventData.start_time, eventData.end_time, eventData.chairperson, eventData.location,
-        eventData.attendees, eventData.preparing_unit, eventData.category, eventData.status, eventData.document_link
-      ]);
+    if (!res.ok) {
+      alert('Lỗi khi lưu cuộc họp: ' + (result.error || 'Không rõ nguyên nhân'));
+      return false;
     }
 
-    saveWasmDbToLocalStorage();
+    // Lưu đệm dự phòng vào LocalStorage
+    let allEvents = JSON.parse(localStorage.getItem('ubnd_calendar_events') || '[]');
+    if (eventData.id) {
+      allEvents = allEvents.map(evt => evt.id === eventData.id ? { ...evt, ...eventData } : evt);
+    } else {
+      eventData.id = result.eventId || Date.now();
+      allEvents.push(eventData);
+    }
+    localStorage.setItem('ubnd_calendar_events', JSON.stringify(allEvents));
+
+    return true;
+  } catch (err) {
+    console.warn('Không thể lưu lên Server Express, sử dụng dự phòng cục bộ:', err.message);
+    let allEvents = JSON.parse(localStorage.getItem('ubnd_calendar_events') || '[]');
+    if (eventData.id) {
+      allEvents = allEvents.map(evt => evt.id === eventData.id ? { ...evt, ...eventData } : evt);
+    } else {
+      eventData.id = Date.now();
+      allEvents.push(eventData);
+    }
+    localStorage.setItem('ubnd_calendar_events', JSON.stringify(allEvents));
     return true;
   }
-
-  // 3. Chế độ Express Backend Server SQL
-  if (settings.syncMode === 'server-sqlite') {
-    const url = eventData.id ? `/api/events/${eventData.id}` : '/api/events';
-    const method = eventData.id ? 'PUT' : 'POST';
-
-    try {
-      const res = await fetch(url, {
-        method: method,
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + (sessionStorage.getItem('admin_password') || '')
-        },
-        body: JSON.stringify(eventData)
-      });
-
-      const result = await res.json();
-
-      if (res.status === 409 && result.conflict) {
-        showConflictWarning(result.message);
-        return false;
-      }
-
-      if (res.status === 401 || res.status === 403) {
-        exitAdminModeForce();
-        return false;
-      }
-
-      if (!res.ok) {
-        alert('Lỗi hệ thống: ' + (result.error || 'Không rõ nguyên nhân'));
-        return false;
-      }
-      return true;
-    } catch (err) {
-      alert('Không thể kết nối đến máy chủ Express: ' + err.message);
-      return false;
-    }
-  }
-
-  // 4. Chế độ LocalStorage JSON thô
-  let allEvents = JSON.parse(localStorage.getItem('ubnd_calendar_events') || '[]');
-  
-  const conflict = allEvents.find(evt => 
-    evt.location === eventData.location &&
-    evt.id !== eventData.id &&
-    evt.status !== 'cancelled' &&
-    evt.status !== 'postponed' &&
-    !(evt.end_time <= eventData.start_time || evt.start_time >= eventData.end_time)
-  );
-
-  if (conflict && !override) {
-    showConflictWarning(`[OFFLINE] Phòng này trùng lịch với cuộc họp: "${conflict.title}" chủ trì bởi ${conflict.chairperson}.`);
-    return false;
-  }
-
-  if (eventData.id) {
-    allEvents = allEvents.map(evt => evt.id === eventData.id ? { ...evt, ...eventData } : evt);
-  } else {
-    eventData.id = Date.now();
-    allEvents.push(eventData);
-  }
-
-  localStorage.setItem('ubnd_calendar_events', JSON.stringify(allEvents));
-  return true;
 }
 
 // Xóa lịch họp
 async function deleteEventData(id) {
-  if (settings.syncMode === 'wasm-sqlite' && sqlDb) {
-    try {
-      sqlDb.run("DELETE FROM events WHERE id = ?", [id]);
-      saveWasmDbToLocalStorage();
+  try {
+    const res = await fetch(`/api/events/${id}`, { 
+      method: 'DELETE',
+      headers: {
+        'Authorization': 'Bearer ' + (sessionStorage.getItem('admin_password') || 'NghiaLam@2026')
+      }
+    });
+
+    if (res.ok) {
+      let allEvents = JSON.parse(localStorage.getItem('ubnd_calendar_events') || '[]');
+      allEvents = allEvents.filter(evt => evt.id !== id);
+      localStorage.setItem('ubnd_calendar_events', JSON.stringify(allEvents));
       return true;
-    } catch (e) {
-      alert('Lỗi SQL khi xóa: ' + e.message);
-      return false;
     }
+    
+    const data = await res.json();
+    alert('Lỗi khi xóa cuộc họp: ' + data.error);
+    return false;
+  } catch (err) {
+    let allEvents = JSON.parse(localStorage.getItem('ubnd_calendar_events') || '[]');
+    allEvents = allEvents.filter(evt => evt.id !== id);
+    localStorage.setItem('ubnd_calendar_events', JSON.stringify(allEvents));
+    return true;
   }
-
-  if (settings.syncMode === 'server-sqlite') {
-    try {
-      const res = await fetch(`/api/events/${id}`, { 
-        method: 'DELETE',
-        headers: {
-          'Authorization': 'Bearer ' + (sessionStorage.getItem('admin_password') || '')
-        }
-      });
-      if (res.ok) {
-        return true;
-      }
-      if (res.status === 401 || res.status === 403) {
-        exitAdminModeForce();
-        return false;
-      }
-      const data = await res.json();
-      alert('Lỗi khi xóa: ' + data.error);
-      return false;
-    } catch (err) {
-      alert('Không kết nối được server: ' + err.message);
-      return false;
-    }
-  }
-
-  let allEvents = JSON.parse(localStorage.getItem('ubnd_calendar_events') || '[]');
-  allEvents = allEvents.filter(evt => evt.id !== id);
-  localStorage.setItem('ubnd_calendar_events', JSON.stringify(allEvents));
-  return true;
 }
 
 // ==========================================================================

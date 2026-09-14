@@ -16,6 +16,30 @@ const db = new sqlite3.Database(dbPath, (err) => {
     console.error('Lỗi khi kết nối database:', err.message);
   } else {
     console.log('Server đã kết nối thành công tới SQLite database.');
+    db.run(`
+      CREATE TABLE IF NOT EXISTS events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time TEXT NOT NULL,
+        chairperson TEXT NOT NULL,
+        location TEXT NOT NULL,
+        attendees TEXT,
+        preparing_unit TEXT,
+        category TEXT NOT NULL DEFAULT 'ubnd',
+        status TEXT NOT NULL DEFAULT 'scheduled',
+        document_link TEXT,
+        gcal_id TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `, (err) => {
+      if (err) {
+        console.error('Lỗi khởi tạo bảng events:', err.message);
+      } else {
+        console.log('Đã đảm bảo khởi tạo bảng events trong SQLite database.');
+        db.run("ALTER TABLE events ADD COLUMN gcal_id TEXT", () => {});
+      }
+    });
   }
 });
 
