@@ -1996,49 +1996,10 @@ function setupEventListeners() {
 
   document.getElementById('btn-copy-zalo').addEventListener('click', copyToZaloFormat);
 
-  document.getElementById('btn-save-settings').addEventListener('click', async () => {
-    const syncMode = document.querySelector('input[name="setting-sync-mode"]:checked').value;
-    const appsScriptUrl = document.getElementById('setting-apps-script-url').value.trim();
-    const gcalId = document.getElementById('setting-gcal-id').value.trim();
-    const webhookSecretInput = document.getElementById('setting-webhook-secret').value.trim();
-    const tvFocus = document.getElementById('setting-tv-focus').value.trim();
-
-    settings.syncMode = syncMode;
-    settings.appsScriptUrl = appsScriptUrl;
-    settings.gcalId = gcalId || 'primary';
-    settings.tvFocus = tvFocus || 'Hồ sơ đất đai • Thu ngân sách • Giải phóng mặt bằng (GPMB)';
-    
-    if (webhookSecretInput !== '********') {
-      settings.webhookSecret = webhookSecretInput;
-    }
-
-    localStorage.setItem('ubnd_calendar_settings', JSON.stringify(settings));
-
-    // Đồng bộ cấu hình lên máy chủ nếu đang kết nối chế độ server và có quyền quản trị
-    if (syncMode === 'server-sqlite' && isAdminMode) {
-      try {
-        const res = await fetch('/api/settings', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + (sessionStorage.getItem('admin_token') || '')
-          },
-          body: JSON.stringify(settings)
-        });
-        if (!res.ok && (res.status === 401 || res.status === 403)) {
-          exitAdminModeForce();
-        }
-      } catch (e) {
-        console.error('Không thể đồng bộ cấu hình lên máy chủ:', e);
-      }
-    }
-
-    closeModal('modal-settings');
-    
-    checkBackendConnection();
-    loadEvents();
-    updateAppsScriptButtonState();
-  });
+  const btnSaveSettings = document.getElementById('btn-save-settings');
+  if (btnSaveSettings) {
+    btnSaveSettings.addEventListener('click', saveSettings);
+  }
 
   document.getElementById('btn-test-backend').addEventListener('click', async () => {
     const statusBox = document.getElementById('settings-status-box');
