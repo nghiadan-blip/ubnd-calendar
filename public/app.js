@@ -767,20 +767,38 @@ function renderGrid() {
   const startDayOnly = formatDateISO(monday);
   const endDayOnly = formatDateISO(sunday);
 
-  let filteredEvents = events.filter(evt => {
+  // Lấy các cuộc họp thực tế từ CSDL trong tuần này
+  let realEvents = events.filter(evt => {
     if (!evt || !evt.start_time) return false;
-    const evtDate = evt.start_time.replace('T', ' ').split(' ')[0];
+    const evtDate = String(evt.start_time).replace('T', ' ').split(' ')[0];
     return evtDate >= startDayOnly && evtDate <= endDayOnly;
   });
 
-  const gridEvents = filteredEvents.length > 0 ? filteredEvents : getWeekFallbackEvents(monday);
+  // Hợp nhất dữ liệu mẫu của tuần với lịch thực tế để tuần luôn có đầy đủ lịch công tác
+  const fallbackEvents = getWeekFallbackEvents(monday);
+  const gridEvents = [...realEvents];
+
+  fallbackEvents.forEach(fb => {
+    const fbDate = fb.start_time.split(' ')[0];
+    // Kiểm tra xem ngày đó đã có lịch thực tế từ DB chưa, nếu chưa có thì giữ lại lịch mẫu cho ngày đó
+    const hasRealEventOnSameDay = realEvents.some(re => {
+      const reDate = String(re.start_time).replace('T', ' ').split(' ')[0];
+      return reDate === fbDate;
+    });
+    if (!hasRealEventOnSameDay) {
+      gridEvents.push(fb);
+    }
+  });
+
+  gridEvents.sort((a, b) => a.start_time.localeCompare(b.start_time));
 
   gridEvents.forEach(evt => {
     if (!evt || !evt.start_time) return;
-    const parts = evt.start_time.replace('T', ' ').split(' ');
+    const cleanStart = String(evt.start_time).replace('T', ' ');
+    const parts = cleanStart.split(' ');
     const datePart = parts[0];
     const timePart = parts[1] || '08:00';
-    const [hours, minutes] = timePart.split(':');
+    const [hours] = timePart.split(':');
     const hourInt = parseInt(hours || '8');
 
     const slot = hourInt < 12 ? 'morning' : 'afternoon';
@@ -807,17 +825,20 @@ function renderGrid() {
 function createEventCard(evt) {
   const card = document.createElement('div');
   
-  // Phân loại trạng thái thời gian thực
+  const startClean = evt.start_time ? String(evt.start_time).replace('T', ' ') : '';
+  const endClean = evt.end_time ? String(evt.end_time).replace('T', ' ') : startClean;
+
+  const startTimeObj = new Date(startClean.replace(/-/g, '/'));
+  const endTimeObj = new Date(endClean.replace(/-/g, '/'));
+  
   const now = new Date();
-  const startTimeObj = new Date(evt.start_time.replace(/-/g, '/'));
-  const endTimeObj = new Date(evt.end_time.replace(/-/g, '/'));
   let calculatedStatus = evt.status || 'scheduled';
   
   if (now > endTimeObj) calculatedStatus = 'completed';
   else if (now >= startTimeObj && now <= endTimeObj) calculatedStatus = 'ongoing';
   else if (startTimeObj > now && (startTimeObj - now) <= 30 * 60000) calculatedStatus = 'upcoming';
 
-  card.className = `event-card cat-${evt.category} status-${calculatedStatus} ${calculatedStatus}`;
+  card.className = `event-card cat-${evt.category || 'ubnd'} status-${calculatedStatus} ${calculatedStatus}`;
   card.dataset.id = evt.id;
   
   let documentIndicator = '';
@@ -829,23 +850,25 @@ function createEventCard(evt) {
     }
   }
 
-  const startTimeStr = evt.start_time.split(' ')[1];
-  const endTimeStr = evt.end_time.split(' ')[1];
+  const startTimeParts = startClean.split(' ');
+  const endTimeParts = endClean.split(' ');
+  const startTimeStr = (startTimeParts[1] || '08:00').substring(0, 5);
+  const endTimeStr = (endTimeParts[1] || '10:30').substring(0, 5);
 
   card.innerHTML = `
     ${documentIndicator}
-    <div class="event-title">${evt.title}</div>
+    <div class="event-title">${evt.title || 'Lịch làm việc'}</div>
     <div class="event-meta-item">
       <i class="fa-regular fa-clock"></i>
       <span><strong>${startTimeStr} - ${endTimeStr}</strong></span>
     </div>
     <div class="event-meta-item">
       <i class="fa-solid fa-user-tie"></i>
-      <span>Chủ trì: <strong>${evt.chairperson}</strong></span>
+      <span>Chủ trì: <strong>${evt.chairperson || 'Thường trực UBND'}</strong></span>
     </div>
     <div class="event-meta-item">
       <i class="fa-solid fa-location-dot"></i>
-      <span>Nơi họp: <strong>${evt.location}</strong></span>
+      <span>Nơi họp: <strong>${evt.location || 'Phòng họp UBND'}</strong></span>
     </div>
     <div class="event-tags-row">
       <span class="event-status-badge status-${calculatedStatus}">
