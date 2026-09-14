@@ -182,8 +182,7 @@ async function loadSettings() {
     console.warn('Không thể nạp cấu hình hệ thống từ server, sử dụng cấu hình cục bộ.', e);
   }
   
-  const radioSyncMode = document.querySelector(`input[name="setting-sync-mode"][value="${settings.syncMode}"]`);
-  if (radioSyncMode) radioSyncMode.checked = true;
+  settings.syncMode = 'server-sqlite';
   
   document.getElementById('setting-gcal-id').value = settings.gcalId || 'primary';
   document.getElementById('setting-apps-script-url').value = settings.appsScriptUrl || '';
@@ -194,7 +193,7 @@ async function loadSettings() {
 }
 
 async function saveSettings() {
-  const syncMode = document.querySelector('input[name="setting-sync-mode"]:checked')?.value || 'server-sqlite';
+  const syncMode = 'server-sqlite';
   const gcalId = document.getElementById('setting-gcal-id').value.trim();
   const appsScriptUrl = document.getElementById('setting-apps-script-url').value.trim();
   const webhookSecretInput = document.getElementById('setting-webhook-secret').value.trim();
