@@ -920,41 +920,17 @@
           }
         }
       } catch (e) {
-        clearTimeout(timeoutId);
-      }
-
-      if (!Array.isArray(weekEvents) || weekEvents.length === 0) {
-        const localData = JSON.parse(localStorage.getItem('ubnd_calendar_events') || '[]');
-        if (Array.isArray(localData) && localData.length > 0) {
-          weekEvents = localData;
-        } else {
-          weekEvents = getTVFallbackEvents(today);
+          const serverEvents = await res.json();
+          if (Array.isArray(serverEvents)) {
+            weekEvents = serverEvents;
+          }
         }
-        syncSuccess = true;
-      }
-
-      weekEvents = weekEvents.filter(evt => evt && typeof evt.start_time === 'string');
-      weekEvents.sort((a, b) => a.start_time.localeCompare(b.start_time));
-
-      if (syncStatusEl) {
-        if (syncSuccess) {
-          const now = new Date();
-          syncStatusEl.innerHTML = `<i class="fa-solid fa-check"></i> Đồng bộ lúc ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-          syncStatusEl.className = 'tv-footer-right';
-        } else {
-          syncStatusEl.innerHTML = `⚠ Mất kết nối`;
-          syncStatusEl.className = 'tv-footer-right offline';
-        }
+      } catch (err) {
+        console.warn('TV: Không thể tải lịch từ Express Server SQL:', err);
       }
 
       let todayEvents = weekEvents.filter(evt => evt && evt.start_time && evt.start_time.replace('T', ' ').split(' ')[0] === todayStr);
       let remainingEvents = weekEvents.filter(evt => evt && evt.start_time && evt.start_time.replace('T', ' ').split(' ')[0] > todayStr);
-
-      if (todayEvents.length === 0 && remainingEvents.length === 0) {
-        const fallback = getTVFallbackEvents(today);
-        todayEvents = fallback.filter(evt => evt.start_time.replace('T', ' ').split(' ')[0] === todayStr);
-        remainingEvents = fallback.filter(evt => evt.start_time.replace('T', ' ').split(' ')[0] > todayStr);
-      }
 
       tvTodayEvents = todayEvents;
       tvRemainingEvents = remainingEvents;
@@ -1029,23 +1005,25 @@
       eventsToRender.forEach(evt => {
         const card = document.createElement('div');
         card.className = `tv-timeline-item ${evt.tvStatus}`;
-        const startTimeStr = evt.start_time.split(' ')[1] || '00:00';
+        const startTimeStr = escapeHtml(evt.start_time.split(' ')[1] || '00:00');
         
         let statusHtml = '';
         if (evt.tvStatus === 'completed') statusHtml = `<span class="tv-badge completed"><i class="fa-solid fa-check"></i> Đã kết thúc</span>`;
         else if (evt.tvStatus === 'ongoing') statusHtml = `<span class="tv-badge ongoing"><i class="fa-solid fa-circle"></i> Đang diễn ra</span>`;
         else if (evt.tvStatus === 'upcoming-near') statusHtml = `<span class="tv-badge upcoming-near"><i class="fa-solid fa-clock"></i> Còn ${evt.diffMins} phút</span>`;
 
-        const qrHtml = evt.document_link ? `<div class="tv-item-qr-small"><img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(evt.document_link)}&color=0284c7" alt="QR"></div>` : '';
+        const qrHtml = (evt.document_link && evt.document_link.startsWith('https://')) 
+          ? `<div class="tv-item-qr-small"><img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(evt.document_link)}&color=0284c7" alt="QR"></div>` 
+          : '';
 
         let metaHtml = '';
-        if (evt.chairperson) metaHtml += `<div class="tv-item-meta"><i class="fa-solid fa-user-tie"></i><span>Chủ trì: <strong>${evt.chairperson.split(' - ')[1] || evt.chairperson}</strong></span></div>`;
-        if (evt.location) metaHtml += `<div class="tv-item-meta"><i class="fa-solid fa-location-dot"></i><span>Địa điểm: <strong>${evt.location}</strong></span></div>`;
+        if (evt.chairperson) metaHtml += `<div class="tv-item-meta"><i class="fa-solid fa-user-tie"></i><span>Chủ trì: <strong>${escapeHtml(evt.chairperson.split(' - ')[1] || evt.chairperson)}</strong></span></div>`;
+        if (evt.location) metaHtml += `<div class="tv-item-meta"><i class="fa-solid fa-location-dot"></i><span>Địa điểm: <strong>${escapeHtml(evt.location)}</strong></span></div>`;
 
         card.innerHTML = `
           <div class="tv-item-time">${startTimeStr}</div>
           <div class="tv-item-body">
-            <div class="tv-item-title" title="${evt.title}">${evt.title}</div>
+            <div class="tv-item-title" title="${escapeHtml(evt.title)}">${escapeHtml(evt.title)}</div>
             <div class="tv-item-desc">${metaHtml}</div>
           </div>
           <div class="tv-item-status">${statusHtml}${qrHtml}</div>
@@ -1061,7 +1039,7 @@
         heroContainer.innerHTML = '';
         const heroEvent = todayEvents.find(evt => evt.tvStatus === 'ongoing' || evt.tvStatus === 'upcoming' || evt.tvStatus === 'upcoming-near');
         if (heroEvent) {
-          const startTimeStr = heroEvent.start_time.split(' ')[1];
+          const startTimeStr = escapeHtml(heroEvent.start_time.split(' ')[1]);
           let countdownHtml = '';
           if (heroEvent.tvStatus === 'ongoing') countdownHtml = `<div class="tv-hero-countdown ongoing"><i class="fa-solid fa-circle"></i> ĐANG DIỄN RA</div>`;
           else if (heroEvent.tvStatus === 'upcoming-near') countdownHtml = `<div class="tv-hero-countdown near"><i class="fa-solid fa-clock"></i> Còn ${heroEvent.diffMins} phút</div>`;
@@ -1071,15 +1049,15 @@
             const diffMins = Math.floor((diffMs % 3600000) / 60000);
             countdownHtml = `<div class="tv-hero-countdown"><i class="fa-solid fa-clock"></i> ${diffHours > 0 ? `Còn ${diffHours}h ${diffMins}m` : `Còn ${diffMins}m`}</div>`;
           }
-          const cleanChair = heroEvent.chairperson ? heroEvent.chairperson.split(' - ')[1] || heroEvent.chairperson : '';
+          const cleanChair = heroEvent.chairperson ? (heroEvent.chairperson.split(' - ')[1] || heroEvent.chairperson) : '';
 
           heroContainer.innerHTML = `
             <div class="tv-hero-label">${heroEvent.tvStatus === 'ongoing' ? 'ĐANG DIỄN RA' : 'TIẾP THEO'}</div>
             <div class="tv-hero-time">${startTimeStr}</div>
-            <div class="tv-hero-title" title="${heroEvent.title}">${heroEvent.title}</div>
+            <div class="tv-hero-title" title="${escapeHtml(heroEvent.title)}">${escapeHtml(heroEvent.title)}</div>
             <div class="tv-hero-meta">
-              <div class="tv-hero-meta-item"><i class="fa-solid fa-location-dot"></i><span>${heroEvent.location || 'Phòng họp UBND'}</span></div>
-              ${cleanChair ? `<div class="tv-hero-meta-item"><i class="fa-solid fa-user-tie"></i><span>Chủ trì: ${cleanChair}</span></div>` : ''}
+              <div class="tv-hero-meta-item"><i class="fa-solid fa-location-dot"></i><span>${escapeHtml(heroEvent.location || 'Phòng họp UBND')}</span></div>
+              ${cleanChair ? `<div class="tv-hero-meta-item"><i class="fa-solid fa-user-tie"></i><span>Chủ trì: ${escapeHtml(cleanChair)}</span></div>` : ''}
             </div>
             ${countdownHtml}
           `;
@@ -1114,10 +1092,10 @@
             
             let metaHtml = '';
             if (cleanChair) {
-              metaHtml += `<span style="display: inline-flex; align-items: center; gap: 4px; color: #0284C7; font-weight: 700;"><i class="fa-solid fa-user-tie" style="font-size: 13px;"></i> Chủ trì: ${cleanChair}</span>`;
+              metaHtml += `<span style="display: inline-flex; align-items: center; gap: 4px; color: #0284C7; font-weight: 700;"><i class="fa-solid fa-user-tie" style="font-size: 13px;"></i> Chủ trì: ${escapeHtml(cleanChair)}</span>`;
             }
             if (evt.location) {
-              metaHtml += `${cleanChair ? ' • ' : ''}<span style="display: inline-flex; align-items: center; gap: 4px; color: #64748B; font-weight: 600;"><i class="fa-solid fa-location-dot" style="font-size: 13px; color: #E11D48;"></i> Tại: ${evt.location}</span>`;
+              metaHtml += `${cleanChair ? ' • ' : ''}<span style="display: inline-flex; align-items: center; gap: 4px; color: #64748B; font-weight: 600;"><i class="fa-solid fa-location-dot" style="font-size: 13px; color: #E11D48;"></i> Tại: ${escapeHtml(evt.location)}</span>`;
             }
 
             item.innerHTML = `

@@ -1,3 +1,13 @@
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // ==========================================================================
 // APP STATE & CONFIGURATION
 // ==========================================================================
@@ -7,33 +17,26 @@ let currentWeekOffset = 0;
 let isAdminMode = false;
 let selectedEvent = null;
 let settings = {
-  syncMode: 'server-sqlite', // Mặc định dùng server-sqlite để chia sẻ dữ liệu giữa tất cả thiết bị
-  appsScriptUrl: '',       // Google Apps Script Web App URL
-  gcalId: 'primary',       // Google Calendar ID
-  webhookSecret: '',       // GitHub Webhook Secret
+  syncMode: 'server-sqlite',
+  appsScriptUrl: '',
+  gcalId: 'primary',
+  webhookSecret: '',
   tvFocus: 'Hồ sơ đất đai • Thu ngân sách • Giải phóng mặt bằng (GPMB)'
 };
 
-// Biến lưu trữ đối tượng Cơ sở dữ liệu SQL.js
 let sqlDb = null;
 let SQL = null;
 
-// Biến lưu trữ danh sách dropdown mặc định (dùng để reset các giá trị tạo động khi chỉnh sửa)
 let originalChairpersonHtml = "";
 let originalLocationHtml = "";
 let originalPreparingHtml = "";
 
 // Khởi chạy ứng dụng
 document.addEventListener('DOMContentLoaded', async () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const modeParam = urlParams.get('mode');
-  const passParam = urlParams.get('pass');
-  const savedPassword = sessionStorage.getItem('admin_password');
+  const savedToken = sessionStorage.getItem('admin_token');
 
-  // Kích hoạt chế độ quản trị 100% nếu có mode=admin, pass=NghiaLam@2026 hoặc đã lưu phiên
-  if (modeParam === 'admin' || passParam === 'NghiaLam@2026' || savedPassword) {
+  if (savedToken) {
     isAdminMode = true;
-    sessionStorage.setItem('admin_password', passParam || savedPassword || 'NghiaLam@2026');
     
     const tvContainer = document.getElementById('tv-mode-container');
     const appContainer = document.getElementById('app-container');
@@ -42,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const btnAdmin = document.getElementById('btn-toggle-admin');
     if (btnAdmin) {
-      btnAdmin.innerHTML = '<i class="fa-solid fa-unlock text-emerald"></i> <span>Chế độ Quản trị</span>';
+      btnAdmin.innerHTML = '<i class="fa-solid fa-unlock text-emerald"></i> <span>Đăng xuất Quản trị</span>';
       btnAdmin.className = 'btn btn-outline border-emerald';
     }
   }
@@ -217,7 +220,7 @@ async function saveSettings() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + (sessionStorage.getItem('admin_password') || 'NghiaLam@2026')
+        'Authorization': 'Bearer ' + (sessionStorage.getItem('admin_token') || '')
       },
       body: JSON.stringify({
         gcalId,
@@ -649,7 +652,7 @@ async function saveEventData(eventData, override = false) {
       method: method,
       headers: { 
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + (sessionStorage.getItem('admin_password') || 'NghiaLam@2026')
+        'Authorization': 'Bearer ' + (sessionStorage.getItem('admin_token') || '')
       },
       body: JSON.stringify(eventData)
     });
@@ -729,7 +732,7 @@ async function deleteEventData(id) {
     const res = await fetch(`/api/events/${id}`, { 
       method: 'DELETE',
       headers: {
-        'Authorization': 'Bearer ' + (sessionStorage.getItem('admin_password') || 'NghiaLam@2026')
+        'Authorization': 'Bearer ' + (sessionStorage.getItem('admin_token') || '')
       }
     });
 
@@ -1707,49 +1710,71 @@ function setupEventListeners() {
 
   const btnAdmin = document.getElementById('btn-toggle-admin');
   if (btnAdmin) {
-    btnAdmin.addEventListener('click', () => {
+    btnAdmin.addEventListener('click', async () => {
       if (!isAdminMode) {
-        isAdminMode = true;
-        sessionStorage.setItem('admin_password', 'NghiaLam@2026');
-        btnAdmin.innerHTML = '<i class="fa-solid fa-unlock" style="color: #6EE7B7;"></i> <span>Chế độ Quản trị ✓</span>';
-        btnAdmin.classList.add('active');
-        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
-        
-        if (!window.location.search.includes('mode=admin')) {
-          window.history.pushState({}, '', '?mode=admin&pass=NghiaLam@2026');
+        const password = prompt('Vui lòng nhập mật khẩu quản trị viên:');
+        if (!password) return;
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+          });
+          const data = await res.json();
+          if (res.ok && data.token) {
+            isAdminMode = true;
+            sessionStorage.setItem('admin_token', data.token);
+            btnAdmin.innerHTML = '<i class="fa-solid fa-unlock text-emerald"></i> <span>Đăng xuất Quản trị</span>';
+            btnAdmin.classList.add('active');
+            document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+            alert('Đăng nhập Quản trị viên thành công!');
+            loadEvents();
+          } else {
+            alert('Đăng nhập thất bại: ' + (data.error || 'Mật khẩu không chính xác.'));
+          }
+        } catch (err) {
+          alert('Không thể kết nối tới máy chủ xác thực.');
         }
-        alert('Đã chuyển sang Chế độ Quản trị hệ thống! Bạn có thể Thêm mới, Chỉnh sửa và Xóa lịch họp.');
       } else {
+        const token = sessionStorage.getItem('admin_token');
+        if (token) {
+          try {
+            await fetch('/api/auth/logout', {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + token }
+            });
+          } catch (e) {}
+        }
         isAdminMode = false;
-        sessionStorage.removeItem('admin_password');
+        sessionStorage.removeItem('admin_token');
         btnAdmin.innerHTML = '<i class="fa-solid fa-gear"></i> <span>Chế độ quản trị</span>';
         btnAdmin.classList.remove('active');
         document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
-        if (window.location.search.includes('mode=admin')) {
-          window.history.pushState({}, '', window.location.pathname);
-        }
-        alert('Đã thoát khỏi Chế độ Quản trị.');
+        alert('Đã đăng xuất Chế độ Quản trị.');
       }
     });
   }
 
-  // Xử lý sự kiện đăng nhập quản trị
-  document.getElementById('form-admin-login').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const password = document.getElementById('admin-password-input').value.trim();
-    const errBox = document.getElementById('admin-login-error');
-    errBox.classList.add('hidden');
+  // Xử lý sự kiện đăng nhập quản trị (modal form nếu có)
+  const loginForm = document.getElementById('form-admin-login');
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('admin-password-input').value.trim();
+      const errBox = document.getElementById('admin-login-error');
+      if (errBox) errBox.classList.add('hidden');
 
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
-      });
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
 
-      if (res.ok) {
-        isAdminMode = true;
-        sessionStorage.setItem('admin_password', password);
+        const data = await res.json();
+        if (res.ok && data.token) {
+          isAdminMode = true;
+          sessionStorage.setItem('admin_token', data.token);
         
         btnAdmin.innerHTML = '<i class="fa-solid fa-unlock text-emerald"></i> <span>Chế độ Quản trị</span>';
         btnAdmin.className = 'btn btn-outline border-emerald';
@@ -1996,7 +2021,7 @@ function setupEventListeners() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + (sessionStorage.getItem('admin_password') || '')
+            'Authorization': 'Bearer ' + (sessionStorage.getItem('admin_token') || '')
           },
           body: JSON.stringify(settings)
         });
@@ -2209,7 +2234,7 @@ async function syncFromGoogleCalendar() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + (sessionStorage.getItem('admin_password') || '')
+          'Authorization': 'Bearer ' + (sessionStorage.getItem('admin_token') || '')
         },
         body: JSON.stringify({ appsScriptUrl: settings.appsScriptUrl })
       });
@@ -2411,7 +2436,7 @@ function renderTVUpcomingGrid(remainingEvents, todayEvents) {
 function exitAdminModeForce() {
   if (isAdminMode) {
     isAdminMode = false;
-    sessionStorage.removeItem('admin_password');
+    sessionStorage.removeItem('admin_token');
     const btnAdmin = document.getElementById('btn-toggle-admin');
     if (btnAdmin) {
       btnAdmin.innerHTML = '<i class="fa-solid fa-lock"></i> <span>Văn phòng UBND</span>';

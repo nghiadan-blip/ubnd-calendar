@@ -797,48 +797,73 @@
   <script src="app.js?v=5.0.0"></script>
   <script>
     (function() {
-      function runAdminDirect() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const mode = urlParams.get('mode');
-        const pass = urlParams.get('pass');
-        const savedPass = sessionStorage.getItem('admin_password');
+      async function runAdminDirect() {
+        const savedToken = sessionStorage.getItem('admin_token');
 
-        if (mode === 'admin' || pass === 'NghiaLam@2026' || savedPass) {
+        if (savedToken) {
           window.isAdminMode = true;
-          sessionStorage.setItem('admin_password', pass || savedPass || 'NghiaLam@2026');
           document.querySelectorAll('.admin-only').forEach(function(el) {
             el.classList.remove('hidden');
             el.style.display = 'inline-flex';
           });
           const btnAdmin = document.getElementById('btn-toggle-admin');
           if (btnAdmin) {
-            btnAdmin.innerHTML = '<i class="fa-solid fa-unlock" style="color: #6EE7B7;"></i> <span>Chế độ Quản trị ✓</span>';
+            btnAdmin.innerHTML = '<i class="fa-solid fa-unlock" style="color: #6EE7B7;"></i> <span>Đăng xuất Quản trị</span>';
             btnAdmin.classList.add('active');
           }
         }
 
         const btnAdmin = document.getElementById('btn-toggle-admin');
         if (btnAdmin) {
-          btnAdmin.onclick = function() {
+          btnAdmin.onclick = async function() {
             if (!window.isAdminMode) {
-              window.isAdminMode = true;
-              sessionStorage.setItem('admin_password', 'NghiaLam@2026');
-              document.querySelectorAll('.admin-only').forEach(function(el) {
-                el.classList.remove('hidden');
-                el.style.display = 'inline-flex';
-              });
-              btnAdmin.innerHTML = '<i class="fa-solid fa-unlock" style="color: #6EE7B7;"></i> <span>Chế độ Quản trị ✓</span>';
-              btnAdmin.classList.add('active');
-              alert('Đã kích hoạt Chế độ Quản trị hệ thống! Bạn có thể Thêm mới, Chỉnh sửa, Xóa và quản lý lịch họp.');
+              const password = prompt('Vui lòng nhập mật khẩu quản trị viên:');
+              if (!password) return;
+
+              try {
+                const res = await fetch('/api/auth/login', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ password })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.token) {
+                  window.isAdminMode = true;
+                  sessionStorage.setItem('admin_token', data.token);
+                  document.querySelectorAll('.admin-only').forEach(function(el) {
+                    el.classList.remove('hidden');
+                    el.style.display = 'inline-flex';
+                  });
+                  btnAdmin.innerHTML = '<i class="fa-solid fa-unlock" style="color: #6EE7B7;"></i> <span>Đăng xuất Quản trị</span>';
+                  btnAdmin.classList.add('active');
+                  alert('Đăng nhập Quản trị viên thành công!');
+                  if (typeof loadEvents === 'function') loadEvents();
+                } else {
+                  alert('Đăng nhập thất bại: ' + (data.error || 'Mật khẩu không chính xác.'));
+                }
+              } catch (err) {
+                alert('Không thể kết nối tới máy chủ xác thực.');
+              }
             } else {
+              const token = sessionStorage.getItem('admin_token');
+              if (token) {
+                try {
+                  await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                  });
+                } catch (e) {}
+              }
               window.isAdminMode = false;
-              sessionStorage.removeItem('admin_password');
+              sessionStorage.removeItem('admin_token');
               document.querySelectorAll('.admin-only').forEach(function(el) {
                 el.classList.add('hidden');
                 el.style.display = 'none';
               });
               btnAdmin.innerHTML = '<i class="fa-solid fa-gear"></i> <span>Chế độ quản trị</span>';
-              alert('Đã thoát Chế độ Quản trị.');
+              btnAdmin.classList.remove('active');
+              alert('Đã đăng xuất phiên Quản trị.');
             }
           };
         }
