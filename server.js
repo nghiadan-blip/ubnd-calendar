@@ -271,43 +271,25 @@ app.post('/api/events', requireAuth, async (req, res) => {
     preparing_unit,
     category,
     status,
-    document_link,
-    override_conflict // true/false - cho phép bỏ qua cảnh báo trùng
+    document_link
   } = req.body;
 
   if (!title || !start_time || !end_time) {
     return res.status(400).json({ error: 'Thiếu các trường bắt buộc (nội dung, thời gian bắt đầu, thời gian kết thúc).' });
   }
 
-  try {
-    // 1. Kiểm tra trùng phòng bằng SQL (Chỉ kiểm tra nếu có địa điểm rõ ràng)
-    const checkLoc = location || '';
-    if (checkLoc) {
-      const conflictEvent = await checkConflict(checkLoc, start_time, end_time);
-      if (conflictEvent && !override_conflict) {
-        return res.status(409).json({
-          conflict: true,
-          message: `Phòng họp/Địa điểm này đã được đăng ký bởi cuộc họp khác!`,
-          conflictEvent: {
-            id: conflictEvent.id,
-            title: conflictEvent.title,
-            start_time: conflictEvent.start_time,
-            end_time: conflictEvent.end_time,
-            chairperson: conflictEvent.chairperson
-          }
-        });
-      }
-    }
+  const cleanStart = String(start_time).replace('T', ' ');
+  const cleanEnd = String(end_time).replace('T', ' ');
 
-    // 2. Chèn vào CSDL
+  try {
     const sql = `
       INSERT INTO events (title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status, document_link)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const values = [
       title,
-      start_time,
-      end_time,
+      cleanStart,
+      cleanEnd,
       chairperson || '',
       location || '',
       attendees || '',
@@ -327,12 +309,12 @@ app.post('/api/events', requireAuth, async (req, res) => {
       });
     });
   } catch (error) {
-    res.status(500).json({ error: 'Lỗi kiểm tra phòng họp: ' + error.message });
+    res.status(500).json({ error: 'Lỗi hệ thống: ' + error.message });
   }
 });
 
 /**
- * 4. Cập nhật lịch họp (có kiểm tra trùng phòng họp)
+ * 4. Cập nhật lịch họp
  * PUT /api/events/:id
  */
 app.put('/api/events/:id', requireAuth, async (req, res) => {
@@ -347,35 +329,17 @@ app.put('/api/events/:id', requireAuth, async (req, res) => {
     preparing_unit,
     category,
     status,
-    document_link,
-    override_conflict
+    document_link
   } = req.body;
 
   if (!title || !start_time || !end_time) {
     return res.status(400).json({ error: 'Thiếu các trường bắt buộc.' });
   }
 
-  try {
-    // 1. Kiểm tra trùng phòng (chỉ kiểm tra nếu có địa điểm và loại trừ chính cuộc họp này)
-    const checkLoc = location || '';
-    if (checkLoc) {
-      const conflictEvent = await checkConflict(checkLoc, start_time, end_time, id);
-      if (conflictEvent && !override_conflict) {
-        return res.status(409).json({
-          conflict: true,
-          message: `Phòng họp/Địa điểm này đã được đăng ký bởi cuộc họp khác!`,
-          conflictEvent: {
-            id: conflictEvent.id,
-            title: conflictEvent.title,
-            start_time: conflictEvent.start_time,
-            end_time: conflictEvent.end_time,
-            chairperson: conflictEvent.chairperson
-          }
-        });
-      }
-    }
+  const cleanStart = String(start_time).replace('T', ' ');
+  const cleanEnd = String(end_time).replace('T', ' ');
 
-    // 2. Cập nhật cơ sở dữ liệu
+  try {
     const sql = `
       UPDATE events 
       SET title = ?, start_time = ?, end_time = ?, chairperson = ?, location = ?, 
@@ -384,8 +348,8 @@ app.put('/api/events/:id', requireAuth, async (req, res) => {
     `;
     const values = [
       title,
-      start_time,
-      end_time,
+      cleanStart,
+      cleanEnd,
       chairperson || '',
       location || '',
       attendees || '',

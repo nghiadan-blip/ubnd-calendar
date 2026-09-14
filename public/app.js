@@ -517,9 +517,16 @@ async function loadEvents() {
   const startDayISO = formatDateISO(monday);
   const endDayISO = formatDateISO(sunday);
 
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowISO = formatDateISO(tomorrow);
+
+  const fetchEndISO = endDayISO > tomorrowISO ? endDayISO : tomorrowISO;
+
   // 1. LUÔN TRUY VẤN DỮ LIỆU TỪ MÁY CHỦ EXPRESS BACKEND SQLITE
   try {
-    const res = await fetch(`/api/events?startDate=${startDayISO}&endDate=${endDayISO}`);
+    const res = await fetch(`/api/events?startDate=${startDayISO}&endDate=${fetchEndISO}`);
     if (res.ok) {
       const serverEvents = await res.json();
       if (Array.isArray(serverEvents)) {
@@ -756,11 +763,21 @@ function clearGrid() {
 function renderGrid() {
   clearGrid();
 
-  const gridEvents = (events && events.length > 0) ? events : FALLBACK_EVENTS;
+  const { monday, sunday } = getWeekRange(currentWeekOffset);
+  const startDayOnly = formatDateISO(monday);
+  const endDayOnly = formatDateISO(sunday);
+
+  let filteredEvents = events.filter(evt => {
+    if (!evt || !evt.start_time) return false;
+    const evtDate = evt.start_time.replace('T', ' ').split(' ')[0];
+    return evtDate >= startDayOnly && evtDate <= endDayOnly;
+  });
+
+  const gridEvents = filteredEvents.length > 0 ? filteredEvents : getWeekFallbackEvents(monday);
 
   gridEvents.forEach(evt => {
-    if (!evt.start_time) return;
-    const parts = evt.start_time.split(' ');
+    if (!evt || !evt.start_time) return;
+    const parts = evt.start_time.replace('T', ' ').split(' ');
     const datePart = parts[0];
     const timePart = parts[1] || '08:00';
     const [hours, minutes] = timePart.split(':');
@@ -769,6 +786,7 @@ function renderGrid() {
     const slot = hourInt < 12 ? 'morning' : 'afternoon';
 
     const dateSplit = datePart.split('-');
+    if (dateSplit.length < 3) return;
     const year = parseInt(dateSplit[0]);
     const month = parseInt(dateSplit[1]) - 1;
     const day = parseInt(dateSplit[2]);

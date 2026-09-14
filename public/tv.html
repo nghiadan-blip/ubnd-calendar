@@ -947,13 +947,13 @@
         }
       }
 
-      let todayEvents = weekEvents.filter(evt => evt.start_time.split(' ')[0] === todayStr);
-      let remainingEvents = weekEvents.filter(evt => evt.start_time.split(' ')[0] > todayStr);
+      let todayEvents = weekEvents.filter(evt => evt && evt.start_time && evt.start_time.replace('T', ' ').split(' ')[0] === todayStr);
+      let remainingEvents = weekEvents.filter(evt => evt && evt.start_time && evt.start_time.replace('T', ' ').split(' ')[0] > todayStr);
 
       if (todayEvents.length === 0 && remainingEvents.length === 0) {
         const fallback = getTVFallbackEvents(today);
-        todayEvents = fallback.filter(evt => evt.start_time.split(' ')[0] === todayStr);
-        remainingEvents = fallback.filter(evt => evt.start_time.split(' ')[0] > todayStr);
+        todayEvents = fallback.filter(evt => evt.start_time.replace('T', ' ').split(' ')[0] === todayStr);
+        remainingEvents = fallback.filter(evt => evt.start_time.replace('T', ' ').split(' ')[0] > todayStr);
       }
 
       tvTodayEvents = todayEvents;
