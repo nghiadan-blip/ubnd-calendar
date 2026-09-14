@@ -220,7 +220,7 @@ app.get('/api/events', (req, res) => {
     params.push(`${startDate} 00:00`);
   }
   if (endDate) {
-    sql += ` AND end_time <= ?`;
+    sql += ` AND start_time <= ?`;
     params.push(`${endDate} 23:59`);
   }
   if (query) {
@@ -235,7 +235,7 @@ app.get('/api/events', (req, res) => {
     if (err) {
       return res.status(500).json({ error: 'Lỗi truy vấn cơ sở dữ liệu: ' + err.message });
     }
-    res.json(rows);
+    res.json(rows || []);
   });
 });
 

@@ -1835,6 +1835,26 @@ function setupEventListeners() {
     }
   });
 
+  // Tự động đồng bộ ngày kết thúc theo ngày bắt đầu khi người dùng chọn ngày mới
+  document.getElementById('event-start').addEventListener('change', (e) => {
+    const startVal = e.target.value;
+    if (!startVal) return;
+    const startDateStr = startVal.split('T')[0];
+    const startTimeStr = startVal.split('T')[1] || '08:00';
+    
+    const endInput = document.getElementById('event-end');
+    const endVal = endInput.value;
+    
+    if (!endVal || endVal <= startVal) {
+      const [h, m] = startTimeStr.split(':').map(Number);
+      const endH = String(Math.min(h + 2, 23)).padStart(2, '0');
+      endInput.value = `${startDateStr}T${endH}:${String(m).padStart(2, '0')}`;
+    } else {
+      const endTimeStr = endVal.split('T')[1] || '10:30';
+      endInput.value = `${startDateStr}T${endTimeStr}`;
+    }
+  });
+
   document.getElementById('form-event').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -1842,14 +1862,24 @@ function setupEventListeners() {
     const title = document.getElementById('event-title').value;
     const category = document.getElementById('event-category').value;
     const status = document.getElementById('event-status').value;
-    const startVal = document.getElementById('event-start').value;
-    const endVal = document.getElementById('event-end').value;
+    let startVal = document.getElementById('event-start').value;
+    let endVal = document.getElementById('event-end').value;
     const chairperson = document.getElementById('event-chairperson').value;
     const location = document.getElementById('event-location').value;
     const attendees = document.getElementById('event-attendees').value;
     const preparing = document.getElementById('event-preparing').value;
     const documentLink = document.getElementById('event-document').value;
     const override = document.getElementById('event-override-conflict').checked;
+
+    // Đảm bảo thời gian kết thúc không nhỏ hơn thời gian bắt đầu
+    if (startVal && endVal && endVal <= startVal) {
+      const startDateStr = startVal.split('T')[0];
+      const startTimeStr = startVal.split('T')[1] || '08:00';
+      const [h, m] = startTimeStr.split(':').map(Number);
+      const endH = String(Math.min(h + 2, 23)).padStart(2, '0');
+      endVal = `${startDateStr}T${endH}:${String(m).padStart(2, '0')}`;
+      document.getElementById('event-end').value = endVal;
+    }
 
     const formatDateTime = (val) => val.replace('T', ' ');
 
@@ -1874,7 +1904,7 @@ function setupEventListeners() {
     if (success) {
       closeModal('modal-event');
       alert('Đã lưu lịch làm việc thành công!');
-      loadEvents();
+      await loadEvents();
     }
   });
 
@@ -2445,7 +2475,7 @@ function renderExecutiveDashboard() {
 
   // Filter Today's events
   let todayEvents = events.filter(evt => {
-    return evt.start_time && evt.start_time.split(' ')[0] === todayISO;
+    return evt && evt.start_time && evt.start_time.replace('T', ' ').split(' ')[0] === todayISO;
   }).sort((a, b) => a.start_time.localeCompare(b.start_time));
 
   // Tự động dùng danh sách chuẩn demo nếu hôm nay chưa có lịch trong DB
@@ -2453,7 +2483,7 @@ function renderExecutiveDashboard() {
 
   // Filter Tomorrow's events
   let tomorrowEvents = events.filter(evt => {
-    return evt.start_time && evt.start_time.split(' ')[0] === tomorrowISO;
+    return evt && evt.start_time && evt.start_time.replace('T', ' ').split(' ')[0] === tomorrowISO;
   }).sort((a, b) => a.start_time.localeCompare(b.start_time));
   if (tomorrowEvents.length === 0) {
     tomorrowEvents = demoTomorrowList;
