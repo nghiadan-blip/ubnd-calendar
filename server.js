@@ -38,6 +38,97 @@ const db = new sqlite3.Database(dbPath, (err) => {
       } else {
         console.log('Đã đảm bảo khởi tạo bảng events trong SQLite database.');
         db.run("ALTER TABLE events ADD COLUMN gcal_id TEXT", () => {});
+
+        // Nạp dữ liệu mẫu ban đầu nếu cơ sở dữ liệu hoàn toàn trống
+        db.get("SELECT COUNT(*) AS count FROM events", (countErr, row) => {
+          if (!countErr && row && row.count === 0) {
+            console.log("Database rỗng, đang nạp dữ liệu lịch làm việc ban đầu...");
+            const now = new Date();
+            const currentDay = now.getDay();
+            const distToMon = currentDay === 0 ? -6 : 1 - currentDay;
+            const mon = new Date(now); mon.setDate(now.getDate() + distToMon);
+            const tue = new Date(mon); tue.setDate(mon.getDate() + 1);
+            const wed = new Date(mon); wed.setDate(mon.getDate() + 2);
+            const thu = new Date(mon); thu.setDate(mon.getDate() + 3);
+            const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+
+            const fmt = (d, t) => {
+              const yyyy = d.getFullYear();
+              const mm = String(d.getMonth() + 1).padStart(2, '0');
+              const dd = String(d.getDate()).padStart(2, '0');
+              return `${yyyy}-${mm}-${dd} ${t}`;
+            };
+
+            const seedEvents = [
+              {
+                title: 'Chào cờ đầu tuần và Họp giao ban Thường trực Đảng ủy, HĐND, UBND xã',
+                start_time: fmt(mon, '07:30'), end_time: fmt(mon, '11:30'),
+                chairperson: 'Đ/c Nguyễn Hùng Cường - Chủ tịch UBND xã',
+                location: 'Phòng họp tầng 2',
+                attendees: 'Thường trực Đảng ủy, HĐND, UBND, Trưởng công an xã',
+                preparing_unit: 'Văn phòng UBND', category: 'dang_uy', status: 'completed'
+              },
+              {
+                title: 'Ký duyệt hồ sơ đất đai và giải quyết thủ tục hành chính tại bộ phận Một cửa',
+                start_time: fmt(mon, '14:00'), end_time: fmt(mon, '17:00'),
+                chairperson: 'Đ/c Lô Xuân Du - Phó Chủ tịch UBND xã',
+                location: 'Bộ phận Tiếp nhận và Trả kết quả (Một cửa)',
+                attendees: 'Công chức Địa chính - Xây dựng',
+                preparing_unit: 'Bộ phận Một cửa', category: 'ubnd', status: 'completed'
+              },
+              {
+                title: 'Tổ chức Hội nghị đối thoại trực tiếp giữa Người đứng đầu cấp ủy với nhân dân',
+                start_time: fmt(tue, '08:00'), end_time: fmt(tue, '11:30'),
+                chairperson: 'Bí thư Đảng ủy & Chủ tịch UBND xã',
+                location: 'Hội trường lớn UBND xã',
+                attendees: 'Toàn thể cán bộ công chức, Trưởng các ngành đoàn thể',
+                preparing_unit: 'Văn phòng Đảng ủy', category: 'dang_uy', status: 'completed'
+              },
+              {
+                title: 'Giao ban lãnh đạo UBND xã',
+                start_time: fmt(wed, '07:30'), end_time: fmt(wed, '08:30'),
+                chairperson: 'Chủ tịch UBND xã',
+                location: 'Phòng họp UBND xã',
+                attendees: 'Lãnh đạo UBND xã & Chuyên viên',
+                preparing_unit: 'Văn phòng UBND', category: 'ubnd', status: 'ongoing'
+              },
+              {
+                title: 'Làm việc với Phòng Kinh tế về Đất đai, Ngân sách và Đầu tư công',
+                start_time: fmt(wed, '15:30'), end_time: fmt(wed, '16:45'),
+                chairperson: 'Chủ tịch UBND xã',
+                location: 'Phòng họp UBND xã',
+                attendees: 'Phòng Kinh tế và bộ phận chuyên môn',
+                preparing_unit: 'Phòng Kinh tế', category: 'ubnd', status: 'scheduled'
+              },
+              {
+                title: 'Lịch Tiếp công dân định kỳ của Chủ tịch UBND xã',
+                start_time: fmt(thu, '08:00'), end_time: fmt(thu, '11:30'),
+                chairperson: 'Đ/c Nguyễn Hùng Cường - Chủ tịch UBND xã',
+                location: 'Phòng Tiếp công dân UBND xã',
+                attendees: 'Công chức Tư pháp, Địa chính, Thanh tra',
+                preparing_unit: 'Bộ phận Tiếp công dân', category: 'tiep_dan', status: 'scheduled'
+              },
+              {
+                title: 'Kiểm tra thực địa tiến độ thi công bê tông hóa đường giao thông',
+                start_time: fmt(fri, '08:00'), end_time: fmt(fri, '11:30'),
+                chairperson: 'Đ/c Nguyễn Huy Anh - Phó Chủ tịch UBND xã',
+                location: 'Hiện trường thi công Thôn 3',
+                attendees: 'Ban Giám sát đầu tư cộng đồng, Trưởng thôn 3',
+                preparing_unit: 'Ban Chỉ đạo giao thông xã', category: 'thuc_dia', status: 'scheduled'
+              }
+            ];
+
+            const stmt = db.prepare(`
+              INSERT INTO events (title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+            seedEvents.forEach(e => {
+              stmt.run([e.title, e.start_time, e.end_time, e.chairperson, e.location, e.attendees, e.preparing_unit, e.category, e.status]);
+            });
+            stmt.finalize();
+            console.log("Đã nạp tự động 7 lịch công tác mẫu vào cơ sở dữ liệu SQLite.");
+          }
+        });
       }
     });
   }

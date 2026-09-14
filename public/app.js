@@ -514,11 +514,37 @@ function getWeekFallbackEvents(monday) {
 
 async function loadEvents() {
   const { monday, sunday } = getWeekRange(currentWeekOffset);
-  const startISO = formatDateISO(monday) + ' 00:00';
-  const endISO = formatDateISO(sunday) + ' 23:59';
+  const startDayISO = formatDateISO(monday);
+  const endDayISO = formatDateISO(sunday);
 
-  if (settings.syncMode === 'wasm-sqlite' && sqlDb) {
+  // 1. LUÔN TRUY VẤN DỮ LIỆU TỪ MÁY CHỦ EXPRESS BACKEND SQLITE
+  try {
+    const res = await fetch(`/api/events?startDate=${startDayISO}&endDate=${endDayISO}`);
+    if (res.ok) {
+      const serverEvents = await res.json();
+      if (Array.isArray(serverEvents)) {
+        events = serverEvents;
+        
+        // Nếu cơ sở dữ liệu hoàn toàn trống dữ liệu cho tuần này, dùng lịch dự phòng
+        if (events.length === 0) {
+          events = getWeekFallbackEvents(monday);
+        }
+
+        renderGrid();
+        renderCitizenReception();
+        renderExecutiveDashboard();
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn('Không thể truy vấn Express Server SQL, thử chế độ đệm cục bộ:', err.message);
+  }
+
+  // 2. Chế độ dự phòng WASM SQLite nếu mất kết nối mạng
+  if (sqlDb) {
     try {
+      const startISO = startDayISO + ' 00:00';
+      const endISO = endDayISO + ' 23:59';
       const stmt = sqlDb.prepare(`
         SELECT * FROM events 
         WHERE start_time >= ? AND end_time <= ? 
@@ -545,40 +571,18 @@ async function loadEvents() {
     }
   }
 
-  if (settings.syncMode === 'server-sqlite') {
-    try {
-      const startDayISO = formatDateISO(monday);
-      const endDayISO = formatDateISO(sunday);
-      const res = await fetch(`/api/events?startDate=${startDayISO}&endDate=${endDayISO}`);
-      if (res.ok) {
-        events = await res.json();
-        if (!events || events.length === 0) {
-          events = getWeekFallbackEvents(monday);
-        }
-        renderGrid();
-        renderCitizenReception();
-        renderExecutiveDashboard();
-        return;
-      }
-      throw new Error();
-    } catch (err) {
-      console.warn('Lỗi kết nối Server SQL, tự động chạy WASM SQLite.');
-    }
-  }
-
+  // 3. Dự phòng LocalStorage
   let localData = localStorage.getItem('ubnd_calendar_events');
-  if (!localData) {
-    events = getWeekFallbackEvents(monday);
-    localStorage.setItem('ubnd_calendar_events', JSON.stringify(events));
-  } else {
+  if (localData) {
     events = JSON.parse(localData);
+  } else {
+    events = getWeekFallbackEvents(monday);
   }
 
-  const startDayOnly = formatDateISO(monday);
-  const endDayOnly = formatDateISO(sunday);
   events = events.filter(evt => {
+    if (!evt || !evt.start_time) return false;
     const evtDate = evt.start_time.split(' ')[0];
-    return evtDate >= startDayOnly && evtDate <= endDayOnly;
+    return evtDate >= startDayISO && evtDate <= endDayISO;
   });
 
   if (!events || events.length === 0) {
@@ -646,6 +650,9 @@ async function saveEventData(eventData, override = false) {
     const result = await res.json();
 
     if (res.status === 409 && result.conflict) {
+      if (confirm(`CẢNH BÁO TRÙNG LỊCH/ĐỊA ĐIỂM:\n${result.message}\n\nBạn có muốn ĐỒNG Ý BỎ QUA cảnh báo trùng lịch và tiếp tục lưu cuộc họp này không?`)) {
+        return await saveEventData(eventData, true);
+      }
       showConflictWarning(result.message);
       return false;
     }
@@ -653,6 +660,35 @@ async function saveEventData(eventData, override = false) {
     if (!res.ok) {
       alert('Lỗi khi lưu cuộc họp: ' + (result.error || 'Không rõ nguyên nhân'));
       return false;
+    }
+
+    // Cập nhật cả vào SQL.js WebAssembly memory để đồng bộ nếu cần
+    if (sqlDb) {
+      try {
+        if (eventData.id) {
+          sqlDb.run(`
+            UPDATE events 
+            SET title = ?, start_time = ?, end_time = ?, chairperson = ?, location = ?, 
+                attendees = ?, preparing_unit = ?, category = ?, status = ?, document_link = ?
+            WHERE id = ?
+          `, [
+            eventData.title, eventData.start_time, eventData.end_time, eventData.chairperson, eventData.location,
+            eventData.attendees, eventData.preparing_unit, eventData.category, eventData.status, eventData.document_link,
+            eventData.id
+          ]);
+        } else {
+          sqlDb.run(`
+            INSERT INTO events (id, title, start_time, end_time, chairperson, location, attendees, preparing_unit, category, status, document_link)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `, [
+            result.eventId || Date.now(), eventData.title, eventData.start_time, eventData.end_time, eventData.chairperson, eventData.location,
+            eventData.attendees, eventData.preparing_unit, eventData.category, eventData.status, eventData.document_link
+          ]);
+        }
+        saveWasmDbToLocalStorage();
+      } catch (e) {
+        console.warn('Lỗi cập nhật WASM local:', e);
+      }
     }
 
     // Lưu đệm dự phòng vào LocalStorage
@@ -1095,10 +1131,9 @@ function openEditEventForm(evt = null) {
     document.getElementById('event-start').value = evt.start_time.replace(' ', 'T');
     document.getElementById('event-end').value = evt.end_time.replace(' ', 'T');
     
-    // Gán dữ liệu cho select dropdown (bằng helper để xử lý giá trị tùy chỉnh)
-    setSelectValueWithCustom('event-chairperson', evt.chairperson);
-    setSelectValueWithCustom('event-location', evt.location);
-    setSelectValueWithCustom('event-preparing', evt.preparing_unit || '');
+    document.getElementById('event-chairperson').value = evt.chairperson || '';
+    document.getElementById('event-location').value = evt.location || '';
+    document.getElementById('event-preparing').value = evt.preparing_unit || '';
 
     document.getElementById('event-attendees').value = evt.attendees || '';
     document.getElementById('event-document').value = evt.document_link || '';
