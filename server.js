@@ -414,14 +414,21 @@ app.post('/api/sync-gcal', async (req, res) => {
     const formatDateISO = (d) => d.toISOString().split('T')[0];
     const fetchUrl = `${targetUrl}?startDate=${formatDateISO(startRange)}&endDate=${formatDateISO(endRange)}`;
 
-    const response = await fetch(fetchUrl);
+    const response = await fetch(fetchUrl, { redirect: 'follow' });
     if (!response.ok) {
       return res.status(502).json({ error: `Không thể kết nối tới Google Apps Script (HTTP ${response.status})` });
     }
 
-    const gcalEvents = await response.json();
-    if (!gcalEvents || !Array.isArray(gcalEvents)) {
-      return res.status(502).json({ error: 'Dữ liệu nhận về từ Google Apps Script không hợp lệ.' });
+    const responseText = await response.text();
+    let gcalEvents = [];
+    try {
+      gcalEvents = JSON.parse(responseText);
+    } catch (parseErr) {
+      return res.status(502).json({ error: 'Google Apps Script trả về trang HTML thay vì JSON. Vui lòng kiểm tra lại thiết lập Deploy Web App (Quyền truy cập phải chọn "Anyone / Bất kỳ ai").' });
+    }
+
+    if (!Array.isArray(gcalEvents)) {
+      return res.status(502).json({ error: 'Dữ liệu nhận về từ Google Apps Script không đúng định dạng danh sách.' });
     }
 
     const { insertedCount, updatedCount } = await upsertGcalEvents(gcalEvents);
@@ -549,15 +556,23 @@ async function autoSyncGcal() {
     const formatDateISO = (d) => d.toISOString().split('T')[0];
     const fetchUrl = `${appsScriptUrl}?startDate=${formatDateISO(startRange)}&endDate=${formatDateISO(endRange)}`;
 
-    const response = await fetch(fetchUrl);
+    const response = await fetch(fetchUrl, { redirect: 'follow' });
     if (!response.ok) {
       console.warn(`Đồng bộ định kỳ thất bại: Máy chủ Google trả về mã lỗi HTTP ${response.status}`);
       return;
     }
 
-    const gcalEvents = await response.json();
-    if (!gcalEvents || !Array.isArray(gcalEvents)) {
-      console.warn('Đồng bộ định kỳ thất bại: Dữ liệu Google Apps Script trả về không đúng định dạng.');
+    const responseText = await response.text();
+    let gcalEvents = [];
+    try {
+      gcalEvents = JSON.parse(responseText);
+    } catch (e) {
+      console.warn('Đồng bộ định kỳ thất bại: Google Apps Script trả về HTML thay vì JSON (Cần kiểm tra quyền Anyone).');
+      return;
+    }
+
+    if (!Array.isArray(gcalEvents)) {
+      console.warn('Đồng bộ định kỳ thất bại: Dữ liệu Google Apps Script trả về không đúng định dạng danh sách.');
       return;
     }
 
